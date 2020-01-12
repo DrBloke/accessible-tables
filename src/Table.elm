@@ -11,7 +11,8 @@ type Table
         , rowHeaders : Maybe (List (List RowHeaderGroup))
         , caption : Maybe Caption
         , summary : Maybe Summary
-        , cells : List Cells
+        , cells : List Cell
+        , attributes : List Html.Attributes
         }
 
 
@@ -20,6 +21,7 @@ type ColumnHeader msg
         { offset : Int
         , label : data -> Html msg
         , span : Int
+        , attributes : List Html.Attributes
         }
 
 
@@ -28,6 +30,7 @@ type RowHeader msg
         { offset : Int
         , label : data -> Html msg
         , span : Int
+        , attributes : List Html.Attributes
         }
 
 
@@ -39,3 +42,12 @@ type ColumnHeaderGroup
 type RowHeaderGroup
     = RowHeaderSingle RowHeader
     | RowHeaderGroup (List RowHeader)
+
+
+type Cell
+    = Cell
+        { column : data -> Int
+        , row : data -> Int
+        , value : data -> Html msg
+        , attributes : List Html.Attributes
+        }
