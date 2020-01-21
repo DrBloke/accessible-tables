@@ -12,8 +12,8 @@ type TableConfiguration data msg
 
 type Table data msg
     = Table
-        { columnns : List Column
-        , rows : List Row
+        { columnns : List (Column data msg)
+        , rows : List (Row data msg)
         , caption : Maybe (Html msg)
         , summary : Maybe (Html msg)
         , cells : List (List (Cell data msg))
@@ -21,13 +21,14 @@ type Table data msg
         }
 
 
-type Column
-    = Column ColumnSettings (Maybe ColumnHeader)
+type Column data msg
+    = Column (ColumnSettings msg) (Maybe (ColumnHeader data msg))
 
 
-type ColumnSettings
-    = ColumnSettingsSingle
-    | ColumnSettingsGroup (List ColumnSettings)
+type ColumnSettings msg
+    = EmptyColumn
+    | ColumnSettingsSingle (ColumnSettingsSingle msg)
+    | ColumnSettingsGroup (List (ColumnSettings msg))
 
 
 type ColumnSettingsSingle msg
@@ -37,9 +38,9 @@ type ColumnSettingsSingle msg
         }
 
 
-type ColumnHeader
-    = ColumnHeaderSingle ColumnHeader
-    | ColumnHeaderGroup (List ColumnHeader)
+type ColumnHeader data msg
+    = ColumnHeaderSingle (ColumnHeader data msg)
+    | ColumnHeaderGroup (List (ColumnHeader data msg))
 
 
 type ColumnHeaderSingle data msg
@@ -49,13 +50,14 @@ type ColumnHeaderSingle data msg
         }
 
 
-type Row
-    = Row RowSettings (Maybe RowHeader)
+type Row data msg
+    = Row (RowSettings msg) (Maybe (RowHeader data msg))
 
 
-type RowSettings
-    = RowSettingsSingle
-    | RowSettingsGroup (List RowSettings)
+type RowSettings msg
+    = EmptyRow
+    | RowSettingsSingle (RowSettingsSingle msg)
+    | RowSettingsGroup (List (RowSettings msg))
 
 
 type RowSettingsSingle msg
@@ -65,9 +67,9 @@ type RowSettingsSingle msg
         }
 
 
-type RowHeader
-    = RowHeaderSingle RowHeader
-    | RowHeaderGroup (List RowHeader)
+type RowHeader data msg
+    = RowHeaderSingle (RowHeader data msg)
+    | RowHeaderGroup (List (RowHeader data msg))
 
 
 type RowHeaderSingle data msg
@@ -90,34 +92,35 @@ simpleTable data =
         (Table
             { columnns =
                 case data of
-                    [ [] ] ->
-                        [ [] ]
+                    [ columns ] ->
+                        List.repeat (List.length columns)
+                            (Column
+                                (ColumnSettingsSingle (ColumnSettings { attributes = [], span = 1 }))
+                                Nothing
+                            )
 
+                    _ ->
+                        [ Column EmptyColumn Nothing ]
+            , rows =
+                case data of
                     rows ->
                         List.repeat (List.length rows)
                             (Row
-                                (RowSettings { attributes = [], span = 1 })
+                                (RowSettingsSingle (RowSettings { attributes = [], span = 1 }))
                                 Nothing
                             )
-            , rows =
-                case data of
-                    [ [] ] ->
-                        [ [] ]
 
-                    [ column1 :: otherColumns ] ->
-                        List.repeat (List.length column1)
-                            Column
-                            (ColumnSettings { attributes = [], span = 1 })
-                            Nothing
+                    _ ->
+                        [ Row EmptyRow Nothing ]
             , caption = Nothing
             , summary = Nothing
             , cells =
                 case data of
-                    [ [] ] ->
-                        [ [] ]
-
                     [ xs ] ->
-                        [ List.map (\v -> Cell { value = Html.text v, attributes = [] }) xs ]
+                        [ List.map (\v -> Cell { value = always (Html.text v), attributes = [] }) xs ]
+
+                    _ ->
+                        [ [] ]
             , attributes = []
             }
         )
