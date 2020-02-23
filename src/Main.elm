@@ -4,7 +4,7 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
-import Table exposing (render, simpleTable)
+import Table exposing (render, setColumnHeadings, simpleTable)
 
 
 main =
@@ -39,5 +39,6 @@ view model =
             , [ "4", "5", "6" ]
             , [ "7", "8", "9" ]
             ]
+            |> setColumnHeadings [ "one", "two", "three" ]
             |> render
         ]

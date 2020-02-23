@@ -1,4 +1,4 @@
-module Table exposing (render, simpleTable)
+module Table exposing (render, setColumnHeadings, simpleTable)
 
 import Browser
 import Html exposing (..)
@@ -12,7 +12,7 @@ type TableConfiguration msg
 
 type Table msg
     = Table
-        { columnnHeaders : List (ColumnHeaders msg)
+        { columnHeaders : List (ColumnHeaders msg)
         , rowHeaders : List (RowHeaders msg)
         , caption : Maybe (Html msg)
         , summary : Maybe (Html msg)
@@ -56,10 +56,10 @@ type Cell msg
 
 simpleTable : List (List String) -> TableConfiguration msg
 simpleTable data =
-    --do a check for noOfColumns same in every row and equal to no of column headings
+    --do a check that all rows have equal number of cells
     ValidTable
         (Table
-            { columnnHeaders =
+            { columnHeaders =
                 case data of
                     [] ->
                         [ NoColumnHeaders ]
@@ -97,30 +97,74 @@ simpleTable data =
         )
 
 
+setColumnHeadings : List String -> TableConfiguration msg -> TableConfiguration msg
+setColumnHeadings columns config =
+    --check that number equals number of columns
+    case config of
+        ValidTable (Table tableConfig) ->
+            ValidTable
+                (Table
+                    { tableConfig
+                        | columnHeaders =
+                            List.map
+                                (\label ->
+                                    ColumnHeaderSingle
+                                        (ColumnHeader
+                                            { label = Html.text label
+                                            , attributes = []
+                                            }
+                                        )
+                                )
+                                columns
+                    }
+                )
+
+        MalformedTable error ->
+            MalformedTable error
+
+
 render : TableConfiguration msg -> Html msg
 render config =
     case config of
         ValidTable (Table tableConfig) ->
+            let
+                _ =
+                    Debug.log "headers" tableConfig.columnHeaders
+
+                columnHeadings =
+                    [ thead []
+                        [ tr []
+                            (List.map
+                                (\heading ->
+                                    case heading of
+                                        NoColumnHeaders ->
+                                            th [] [ text "" ]
+
+                                        ColumnHeaderSingle (ColumnHeader colHeader) ->
+                                            th [] [ colHeader.label ]
+
+                                        ColumnHeaderGroup _ _ ->
+                                            th [] [ text "" ]
+                                )
+                                tableConfig.columnHeaders
+                            )
+                        ]
+                    ]
+
+                cells =
+                    [ tbody []
+                        (List.map
+                            (\row ->
+                                tr [] (List.map (\(Cell cell) -> td [] [ cell.value ]) row)
+                            )
+                            tableConfig.cells
+                        )
+                    ]
+            in
             table []
-                (List.map
-                    (\row ->
-                        tr [] (List.map (\(Cell cell) -> td [] [ cell.value ]) row)
-                    )
-                    tableConfig.cells
+                (columnHeadings
+                    ++ cells
                 )
 
         MalformedTable error ->
             text error
-
-
-
---
--- setColumnHeadings : List String -> TableConfiguration data msg -> TableConfiguration data msg ->
--- setColumnHeadings columns config =
---   case config of
---       ValidTable (Table tableConfig) ->
---           case tableConfig.columnns of
---
---
---       MalformedTable error ->
---           text error
