@@ -4,6 +4,7 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
+import Table exposing (render, simpleTable)
 
 
 main =
@@ -20,16 +21,12 @@ init =
 
 
 type Msg
-    = ChangeInput String
-    | NoOp
+    = NoOp
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        ChangeInput inputText ->
-            { model | textInput = inputText }
-
         NoOp ->
             model
 
@@ -37,7 +34,10 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ input [ type_ "text", placeholder "Enter formula", onInput ChangeInput ] []
-        , br [] []
-        , text model.textInput
+        [ simpleTable
+            [ [ "1", "2", "3" ]
+            , [ "4", "5", "6" ]
+            , [ "7", "8", "9" ]
+            ]
+            |> render
         ]

@@ -1,126 +1,126 @@
-module Main exposing (simpleTable)
+module Table exposing (render, simpleTable)
 
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 
 
-type TableConfiguration data msg
-    = ValidTable (Table data msg)
+type TableConfiguration msg
+    = ValidTable (Table msg)
     | MalformedTable String
 
 
-type Table data msg
+type Table msg
     = Table
-        { columnns : List (Column data msg)
-        , rows : List (Row data msg)
+        { columnnHeaders : List (ColumnHeaders msg)
+        , rowHeaders : List (RowHeaders msg)
         , caption : Maybe (Html msg)
         , summary : Maybe (Html msg)
-        , cells : List (List (Cell data msg))
+        , cells : List (List (Cell msg))
         , attributes : List (Html.Attribute msg)
         }
 
 
-type Column data msg
-    = Column (ColumnSettings msg) (Maybe (ColumnHeader data msg))
+type ColumnHeaders msg
+    = NoColumnHeaders
+    | ColumnHeaderSingle (ColumnHeader msg)
+    | ColumnHeaderGroup (ColumnHeader msg) (List (ColumnHeader msg))
 
 
-type ColumnSettings msg
-    = EmptyColumn
-    | ColumnSettingsSingle (ColumnSettingsSingle msg)
-    | ColumnSettingsGroup (List (ColumnSettings msg))
-
-
-type ColumnSettingsSingle msg
-    = ColumnSettings
-        { attributes : List (Html.Attribute msg)
-        , span : Int
-        }
-
-
-type ColumnHeader data msg
-    = ColumnHeaderSingle (ColumnHeader data msg)
-    | ColumnHeaderGroup (List (ColumnHeader data msg))
-
-
-type ColumnHeaderSingle data msg
+type ColumnHeader msg
     = ColumnHeader
-        { label : data -> Html msg
+        { label : Html msg
         , attributes : List (Html.Attribute msg)
         }
 
 
-type Row data msg
-    = Row (RowSettings msg) (Maybe (RowHeader data msg))
+type RowHeaders msg
+    = NoRowHeaders
+    | RowHeaderSingle (RowHeader msg)
+    | RowHeaderGroup (RowHeader msg) (List (RowHeader msg))
 
 
-type RowSettings msg
-    = EmptyRow
-    | RowSettingsSingle (RowSettingsSingle msg)
-    | RowSettingsGroup (List (RowSettings msg))
-
-
-type RowSettingsSingle msg
-    = RowSettings
-        { attributes : List (Html.Attribute msg)
-        , span : Int
-        }
-
-
-type RowHeader data msg
-    = RowHeaderSingle (RowHeader data msg)
-    | RowHeaderGroup (List (RowHeader data msg))
-
-
-type RowHeaderSingle data msg
+type RowHeader msg
     = RowHeader
-        { label : data -> Html msg
+        { label : Html msg
         , attributes : List (Html.Attribute msg)
         }
 
 
-type Cell data msg
+type Cell msg
     = Cell
-        { value : data -> Html msg
+        { value : Html msg
         , attributes : List (Html.Attribute msg)
         }
 
 
-simpleTable : List (List String) -> TableConfiguration data msg
+simpleTable : List (List String) -> TableConfiguration msg
 simpleTable data =
+    --do a check for noOfColumns same in every row and equal to no of column headings
     ValidTable
         (Table
-            { columnns =
+            { columnnHeaders =
                 case data of
-                    [ columns ] ->
-                        List.repeat (List.length columns)
-                            (Column
-                                (ColumnSettingsSingle (ColumnSettings { attributes = [], span = 1 }))
-                                Nothing
-                            )
+                    [] ->
+                        [ NoColumnHeaders ]
 
-                    _ ->
-                        [ Column EmptyColumn Nothing ]
-            , rows =
+                    rows ->
+                        let
+                            noOfColumns =
+                                List.head rows
+                                    |> Maybe.withDefault []
+                                    |> List.length
+                        in
+                        case noOfColumns of
+                            0 ->
+                                [ NoColumnHeaders ]
+
+                            _ ->
+                                List.repeat noOfColumns
+                                    NoColumnHeaders
+            , rowHeaders =
                 case data of
+                    [] ->
+                        [ NoRowHeaders ]
+
                     rows ->
                         List.repeat (List.length rows)
-                            (Row
-                                (RowSettingsSingle (RowSettings { attributes = [], span = 1 }))
-                                Nothing
-                            )
-
-                    _ ->
-                        [ Row EmptyRow Nothing ]
+                            NoRowHeaders
             , caption = Nothing
             , summary = Nothing
             , cells =
                 case data of
-                    [ xs ] ->
-                        [ List.map (\v -> Cell { value = always (Html.text v), attributes = [] }) xs ]
-
-                    _ ->
-                        [ [] ]
+                    rows ->
+                        List.map (\row -> List.map (\v -> Cell { value = Html.text v, attributes = [] }) row) rows
             , attributes = []
             }
         )
+
+
+render : TableConfiguration msg -> Html msg
+render config =
+    case config of
+        ValidTable (Table tableConfig) ->
+            table []
+                (List.map
+                    (\row ->
+                        tr [] (List.map (\(Cell cell) -> td [] [ cell.value ]) row)
+                    )
+                    tableConfig.cells
+                )
+
+        MalformedTable error ->
+            text error
+
+
+
+--
+-- setColumnHeadings : List String -> TableConfiguration data msg -> TableConfiguration data msg ->
+-- setColumnHeadings columns config =
+--   case config of
+--       ValidTable (Table tableConfig) ->
+--           case tableConfig.columnns of
+--
+--
+--       MalformedTable error ->
+--           text error
