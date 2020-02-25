@@ -1,5 +1,5 @@
 module Table exposing
-    ( columHeadersNotRequired
+    ( columHeadersNotShown
     , render
     , setColumnHeadings
     , simpleTable
@@ -17,10 +17,10 @@ type TableConfiguration msg
 
 type Table msg
     = Table
-        { columnHeaders : Maybe (List (ColumnHeaders msg))
-        , columnHeadersRequired : Bool
-        , rowHeaders : Maybe (List (RowHeaders msg))
-        , rowHeadersRequired : Bool
+        { columnHeaders : List (ColumnHeaders msg)
+        , columnHeadersShown : Bool
+        , rowHeaders : List (RowHeaders msg)
+        , rowHeadersShown : Bool
         , caption : Maybe (Html msg)
         , summary : Maybe (Html msg)
         , cells : List (List (Cell msg))
@@ -61,26 +61,56 @@ type Cell msg
 
 simpleTable : List (List String) -> TableConfiguration msg
 simpleTable data =
-    --do a check that all rows have equal number of cells
-    ValidTable
-        (Table
-            { columnHeaders = Nothing
-            , columnHeadersRequired = True
-            , rowHeaders = Nothing
-            , rowHeadersRequired = True
-            , caption = Nothing
-            , summary = Nothing
-            , cells =
-                case data of
-                    rows ->
-                        List.map (\row -> List.map (\v -> Cell { value = Html.text v, attributes = [] }) row) rows
-            , attributes = []
-            }
-        )
+    -- do a check that all rows have equal number of cells
+    case allRowsEqualLength data of
+        Ok noOfCols ->
+            ValidTable
+                (Table
+                    { columnHeaders = List.range 1 noOfCols |> List.map (\colNo -> ColumnHeaderSingle (ColumnHeader { label = text (String.fromInt colNo), attributes = [] }))
+                    , columnHeadersShown = True
+                    , rowHeaders = List.range 1 (List.length data) |> List.map (\rowNo -> RowHeaderSingle (RowHeader { label = text (String.fromInt rowNo), attributes = [] }))
+                    , rowHeadersShown = True
+                    , caption = Nothing
+                    , summary = Nothing
+                    , cells =
+                        List.map (\row -> List.map (\v -> Cell { value = Html.text v, attributes = [] }) row) data
+                    , attributes = []
+                    }
+                )
+
+        Err error ->
+            MalformedTable error
 
 
-columHeadersNotRequired : TableConfiguration msg -> TableConfiguration msg
-columHeadersNotRequired config =
+allRowsEqualLength : List (List String) -> Result String Int
+allRowsEqualLength data =
+    case data of
+        [] ->
+            Ok 0
+
+        [ [] ] ->
+            Ok 0
+
+        row1 :: remainingRows ->
+            allRowsEqualLengthHelper (List.length row1) remainingRows
+
+
+allRowsEqualLengthHelper : Int -> List (List a) -> Result String Int
+allRowsEqualLengthHelper rowLength remainingRows =
+    case remainingRows of
+        [] ->
+            Ok rowLength
+
+        thisRow :: rest ->
+            if List.length thisRow == rowLength then
+                allRowsEqualLengthHelper rowLength rest
+
+            else
+                Err "row lengths don't match"
+
+
+columHeadersNotShown : TableConfiguration msg -> TableConfiguration msg
+columHeadersNotShown config =
     case config of
         MalformedTable error ->
             MalformedTable error
@@ -88,7 +118,7 @@ columHeadersNotRequired config =
         ValidTable (Table tableConfig) ->
             ValidTable
                 (Table
-                    { tableConfig | columnHeadersRequired = False }
+                    { tableConfig | columnHeadersShown = False }
                 )
 
 
@@ -101,18 +131,16 @@ setColumnHeadings columns config =
                 (Table
                     { tableConfig
                         | columnHeaders =
-                            Just
-                                (List.map
-                                    (\label ->
-                                        ColumnHeaderSingle
-                                            (ColumnHeader
-                                                { label = Html.text label
-                                                , attributes = []
-                                                }
-                                            )
-                                    )
-                                    columns
+                            List.map
+                                (\label ->
+                                    ColumnHeaderSingle
+                                        (ColumnHeader
+                                            { label = Html.text label
+                                            , attributes = []
+                                            }
+                                        )
                                 )
+                                columns
                     }
                 )
 
@@ -120,85 +148,81 @@ setColumnHeadings columns config =
             MalformedTable error
 
 
-setRowHeadings : List String -> TableConfiguration msg -> TableConfiguration msg
-setRowHeadings rows config =
-    --check that number equals number of rows
-    case config of
-        ValidTable (Table tableConfig) ->
-            ValidTable
-                (Table
-                    { tableConfig
-                        | rowHeaders =
-                            Just
-                                (List.map
-                                    (\label ->
-                                        RowHeaderSingle
-                                            (RowHeader
-                                                { label = Html.text label
-                                                , attributes = []
-                                                }
-                                            )
-                                    )
-                                    rows
-                                )
-                    }
-                )
 
-        MalformedTable error ->
-            MalformedTable error
-
-
-validateColumns : TableConfiguration msg -> TableConfiguration msg
-validateColumns config =
-    case config of
-        MalformedTable error ->
-            MalformedTable error
-
-        ValidTable (Table validConfig) ->
-            case validConfig.columnHeaders of
-                Nothing ->
-                    if validConfig.columnHeadersRequired then
-                        MalformedTable "Column headers are required"
-
-                    else
-                        let
-                            noOfColumns =
-                                case List.head validConfig.cells of
-                                    Nothing ->
-                                        0
-
-                                    Just row ->
-                                        List.length row
-                        in
-                        ValidTable
-                            (Table
-                                { validConfig
-                                    | columnHeaders =
-                                        Just
-                                            (List.repeat noOfColumns
-                                                (ColumnHeaderSingle
-                                                    (ColumnHeader
-                                                        { label = text ""
-                                                        , attributes = []
-                                                        }
-                                                    )
-                                                )
-                                            )
-                                }
-                            )
-
-                Just _ ->
-                    ValidTable (Table validConfig)
+--
+-- setRowHeadings : List String -> TableConfiguration msg -> TableConfiguration msg
+-- setRowHeadings rows config =
+--     --check that number equals number of rows
+--     case config of
+--         ValidTable (Table tableConfig) ->
+--             ValidTable
+--                 (Table
+--                     { tableConfig
+--                         | rowHeaders =
+--                             Just
+--                                 (List.map
+--                                     (\label ->
+--                                         RowHeaderSingle
+--                                             (RowHeader
+--                                                 { label = Html.text label
+--                                                 , attributes = []
+--                                                 }
+--                                             )
+--                                     )
+--                                     rows
+--                                 )
+--                     }
+--                 )
+--
+--         MalformedTable error ->
+--             MalformedTable error
+--
+-- validateColumns : TableConfiguration msg -> TableConfiguration msg
+-- validateColumns config =
+--     case config of
+--         MalformedTable error ->
+--             MalformedTable error
+--
+--         ValidTable (Table validConfig) ->
+--             case validConfig.columnHeaders of
+--                 Nothing ->
+--                     if validConfig.columnHeadersShown then
+--                         MalformedTable "Column headers are Shown"
+--
+--                     else
+--                         let
+--                             noOfColumns =
+--                                 case List.head validConfig.cells of
+--                                     Nothing ->
+--                                         0
+--
+--                                     Just row ->
+--                                         List.length row
+--                         in
+--                         ValidTable
+--                             (Table
+--                                 { validConfig
+--                                     | columnHeaders =
+--                                         Just
+--                                             (List.repeat noOfColumns
+--                                                 (ColumnHeaderSingle
+--                                                     (ColumnHeader
+--                                                         { label = text ""
+--                                                         , attributes = []
+--                                                         }
+--                                                     )
+--                                                 )
+--                                             )
+--                                 }
+--                             )
+--
+--                 Just _ ->
+--                     ValidTable (Table validConfig)
 
 
 render : TableConfiguration msg -> Html msg
 render config =
-    let
-        validatedConfig =
-            config
-                |> validateColumns
-    in
-    case validatedConfig of
+    case config of
         ValidTable (Table tableConfig) ->
             case tableConfig.cells of
                 [ [] ] ->
@@ -207,26 +231,21 @@ render config =
                 _ ->
                     let
                         columnHeadings =
-                            case tableConfig.columnHeaders of
-                                Nothing ->
-                                    [ text "invalid state" ]
+                            [ thead []
+                                [ tr []
+                                    (List.map
+                                        (\colHeader_ ->
+                                            case colHeader_ of
+                                                ColumnHeaderSingle (ColumnHeader colHeader) ->
+                                                    th [ scope "col" ] [ colHeader.label ]
 
-                                Just colHeaders ->
-                                    [ thead []
-                                        [ tr []
-                                            (List.map
-                                                (\colHeader_ ->
-                                                    case colHeader_ of
-                                                        ColumnHeaderSingle (ColumnHeader colHeader) ->
-                                                            th [ scope "col" ] [ colHeader.label ]
-
-                                                        _ ->
-                                                            text "complex tables not yet implemented"
-                                                )
-                                                colHeaders
-                                            )
-                                        ]
-                                    ]
+                                                _ ->
+                                                    text "complex tables not yet implemented"
+                                        )
+                                        tableConfig.columnHeaders
+                                    )
+                                ]
+                            ]
 
                         cells =
                             [ tbody []
