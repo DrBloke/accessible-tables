@@ -1,13 +1,16 @@
 module Table exposing
-    ( columHeadersNotShown
+    ( hideColumnHeaders
+    , hideRowHeaders
     , render
     , setColumnHeadings
+    , setRowHeadings
     , simpleTable
     )
 
 import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
+import List.Extra as List
 
 
 type TableConfiguration msg
@@ -17,9 +20,9 @@ type TableConfiguration msg
 
 type Table msg
     = Table
-        { columnHeaders : List (ColumnHeaders msg)
+        { columnHeaders : ColumnHeaders msg
         , columnHeadersShown : Bool
-        , rowHeaders : List (RowHeaders msg)
+        , rowHeaders : RowHeaders msg
         , rowHeadersShown : Bool
         , caption : Maybe (Html msg)
         , summary : Maybe (Html msg)
@@ -29,8 +32,16 @@ type Table msg
 
 
 type ColumnHeaders msg
+    = ColumnHeadersSimple (List (ColumnHeaderSingle msg))
+    | ColumnHeadersComplex (List (ColumnHeaderGroup msg))
+
+
+type ColumnHeaderSingle msg
     = ColumnHeaderSingle (ColumnHeader msg)
-    | ColumnHeaderGroup (ColumnHeader msg) (List (ColumnHeader msg))
+
+
+type ColumnHeaderGroup msg
+    = ColumnHeaderGroup (ColumnHeader msg) (List (ColumnHeader msg))
 
 
 type ColumnHeader msg
@@ -41,8 +52,16 @@ type ColumnHeader msg
 
 
 type RowHeaders msg
+    = RowHeadersSimple (List (RowHeaderSingle msg))
+    | RowHeadersComplex (List (RowHeaderGroup msg))
+
+
+type RowHeaderSingle msg
     = RowHeaderSingle (RowHeader msg)
-    | RowHeaderGroup (RowHeader msg) (List (RowHeader msg))
+
+
+type RowHeaderGroup msg
+    = RowHeaderGroup (RowHeader msg) (List (RowHeader msg))
 
 
 type RowHeader msg
@@ -66,9 +85,9 @@ simpleTable data =
         Ok noOfCols ->
             ValidTable
                 (Table
-                    { columnHeaders = List.range 1 noOfCols |> List.map (\colNo -> ColumnHeaderSingle (ColumnHeader { label = text (String.fromInt colNo), attributes = [] }))
+                    { columnHeaders = ColumnHeadersSimple (List.range 1 noOfCols |> List.map (\colNo -> ColumnHeaderSingle (ColumnHeader { label = text (String.fromInt colNo), attributes = [] })))
                     , columnHeadersShown = True
-                    , rowHeaders = List.range 1 (List.length data) |> List.map (\rowNo -> RowHeaderSingle (RowHeader { label = text (String.fromInt rowNo), attributes = [] }))
+                    , rowHeaders = RowHeadersSimple (List.range 1 (List.length data) |> List.map (\rowNo -> RowHeaderSingle (RowHeader { label = text (String.fromInt rowNo), attributes = [] })))
                     , rowHeadersShown = True
                     , caption = Nothing
                     , summary = Nothing
@@ -86,9 +105,6 @@ allRowsEqualLength : List (List String) -> Result String Int
 allRowsEqualLength data =
     case data of
         [] ->
-            Ok 0
-
-        [ [] ] ->
             Ok 0
 
         row1 :: remainingRows ->
@@ -109,8 +125,8 @@ allRowsEqualLengthHelper rowLength remainingRows =
                 Err "row lengths don't match"
 
 
-columHeadersNotShown : TableConfiguration msg -> TableConfiguration msg
-columHeadersNotShown config =
+hideColumnHeaders : TableConfiguration msg -> TableConfiguration msg
+hideColumnHeaders config =
     case config of
         MalformedTable error ->
             MalformedTable error
@@ -131,16 +147,18 @@ setColumnHeadings columns config =
                 (Table
                     { tableConfig
                         | columnHeaders =
-                            List.map
-                                (\label ->
-                                    ColumnHeaderSingle
-                                        (ColumnHeader
-                                            { label = Html.text label
-                                            , attributes = []
-                                            }
-                                        )
+                            ColumnHeadersSimple
+                                (List.map
+                                    (\label ->
+                                        ColumnHeaderSingle
+                                            (ColumnHeader
+                                                { label = Html.text label
+                                                , attributes = []
+                                                }
+                                            )
+                                    )
+                                    columns
                                 )
-                                columns
                     }
                 )
 
@@ -148,76 +166,45 @@ setColumnHeadings columns config =
             MalformedTable error
 
 
+setRowHeadings : List String -> TableConfiguration msg -> TableConfiguration msg
+setRowHeadings rows config =
+    --check that number equals number of rows
+    case config of
+        ValidTable (Table tableConfig) ->
+            ValidTable
+                (Table
+                    { tableConfig
+                        | rowHeaders =
+                            RowHeadersSimple
+                                (List.map
+                                    (\label ->
+                                        RowHeaderSingle
+                                            (RowHeader
+                                                { label = Html.text label
+                                                , attributes = []
+                                                }
+                                            )
+                                    )
+                                    rows
+                                )
+                    }
+                )
 
---
--- setRowHeadings : List String -> TableConfiguration msg -> TableConfiguration msg
--- setRowHeadings rows config =
---     --check that number equals number of rows
---     case config of
---         ValidTable (Table tableConfig) ->
---             ValidTable
---                 (Table
---                     { tableConfig
---                         | rowHeaders =
---                             Just
---                                 (List.map
---                                     (\label ->
---                                         RowHeaderSingle
---                                             (RowHeader
---                                                 { label = Html.text label
---                                                 , attributes = []
---                                                 }
---                                             )
---                                     )
---                                     rows
---                                 )
---                     }
---                 )
---
---         MalformedTable error ->
---             MalformedTable error
---
--- validateColumns : TableConfiguration msg -> TableConfiguration msg
--- validateColumns config =
---     case config of
---         MalformedTable error ->
---             MalformedTable error
---
---         ValidTable (Table validConfig) ->
---             case validConfig.columnHeaders of
---                 Nothing ->
---                     if validConfig.columnHeadersShown then
---                         MalformedTable "Column headers are Shown"
---
---                     else
---                         let
---                             noOfColumns =
---                                 case List.head validConfig.cells of
---                                     Nothing ->
---                                         0
---
---                                     Just row ->
---                                         List.length row
---                         in
---                         ValidTable
---                             (Table
---                                 { validConfig
---                                     | columnHeaders =
---                                         Just
---                                             (List.repeat noOfColumns
---                                                 (ColumnHeaderSingle
---                                                     (ColumnHeader
---                                                         { label = text ""
---                                                         , attributes = []
---                                                         }
---                                                     )
---                                                 )
---                                             )
---                                 }
---                             )
---
---                 Just _ ->
---                     ValidTable (Table validConfig)
+        MalformedTable error ->
+            MalformedTable error
+
+
+hideRowHeaders : TableConfiguration msg -> TableConfiguration msg
+hideRowHeaders config =
+    case config of
+        MalformedTable error ->
+            MalformedTable error
+
+        ValidTable (Table tableConfig) ->
+            ValidTable
+                (Table
+                    { tableConfig | rowHeadersShown = False }
+                )
 
 
 render : TableConfiguration msg -> Html msg
@@ -230,36 +217,49 @@ render config =
 
                 _ ->
                     let
+                        spacer =
+                            if tableConfig.rowHeadersShown then
+                                [ td [] [] ]
+
+                            else
+                                []
+
                         columnHeadings =
-                            [ thead []
-                                [ tr []
-                                    (List.map
-                                        (\colHeader_ ->
-                                            case colHeader_ of
-                                                ColumnHeaderSingle (ColumnHeader colHeader) ->
-                                                    th [ scope "col" ] [ colHeader.label ]
+                            case tableConfig.columnHeaders of
+                                ColumnHeadersSimple cols ->
+                                    [ thead []
+                                        [ tr [ hidden (not tableConfig.columnHeadersShown) ]
+                                            (spacer
+                                                ++ List.map
+                                                    (\(ColumnHeaderSingle (ColumnHeader colInfo)) ->
+                                                        th [ scope "col" ] [ colInfo.label ]
+                                                    )
+                                                    cols
+                                            )
+                                        ]
+                                    ]
 
-                                                _ ->
-                                                    text "complex tables not yet implemented"
+                                _ ->
+                                    [ text "TODO complex" ]
+
+                        body =
+                            case tableConfig.rowHeaders of
+                                RowHeadersSimple rowHeaders ->
+                                    [ tbody []
+                                        (List.zip tableConfig.cells rowHeaders
+                                            |> List.map
+                                                (\( rowDataInfo, RowHeaderSingle (RowHeader rowHeaderInfo) ) ->
+                                                    tr [] ([ th ([ scope "row", hidden (not tableConfig.rowHeadersShown) ] ++ rowHeaderInfo.attributes) [ rowHeaderInfo.label ] ] ++ List.map (\(Cell cell) -> td cell.attributes [ cell.value ]) rowDataInfo)
+                                                )
                                         )
-                                        tableConfig.columnHeaders
-                                    )
-                                ]
-                            ]
+                                    ]
 
-                        cells =
-                            [ tbody []
-                                (List.map
-                                    (\row ->
-                                        tr [] (List.map (\(Cell cell) -> td [] [ cell.value ]) row)
-                                    )
-                                    tableConfig.cells
-                                )
-                            ]
+                                RowHeadersComplex _ ->
+                                    [ tbody [] [ tr [] [ td [] [ text "not implemented" ] ] ] ]
                     in
                     table []
                         (columnHeadings
-                            ++ cells
+                            ++ body
                         )
 
         MalformedTable error ->

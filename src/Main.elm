@@ -4,7 +4,7 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
-import Table exposing (columHeadersNotShown, render, setColumnHeadings, simpleTable)
+import Table exposing (hideColumnHeaders, hideRowHeaders, render, setColumnHeadings, setRowHeadings, simpleTable)
 
 
 main =
@@ -39,7 +39,9 @@ view model =
             , [ "4", "5", "6" ]
             , [ "7", "8", "9" ]
             ]
-            --|> columHeadersNotRequired
-            --|> setColumnHeadings [ "one", "two", "three" ]
+            --|> hideColumnHeaders
+            --|> hideRowHeaders
+            |> setColumnHeadings [ "one", "two", "three" ]
+            |> setRowHeadings [ "A", "B", "C" ]
             |> render
         ]
