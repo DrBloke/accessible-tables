@@ -207,13 +207,13 @@ hideRowHeaders config =
                 )
 
 
-render : TableConfiguration msg -> Html msg
+render : TableConfiguration msg -> Result String (Html msg)
 render config =
     case config of
         ValidTable (Table tableConfig) ->
             case tableConfig.cells of
                 [ [] ] ->
-                    text "no data"
+                    Err "no data"
 
                 _ ->
                     let
@@ -257,10 +257,12 @@ render config =
                                 RowHeadersComplex _ ->
                                     [ tbody [] [ tr [] [ td [] [ text "not implemented" ] ] ] ]
                     in
-                    table []
-                        (columnHeadings
-                            ++ body
+                    Ok
+                        (table []
+                            (columnHeadings
+                                ++ body
+                            )
                         )
 
         MalformedTable error ->
-            text error
+            Err error

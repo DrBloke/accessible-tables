@@ -33,15 +33,22 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ simpleTable
-            [ [ "1", "2", "3" ]
-            , [ "4", "5", "6" ]
-            , [ "7", "8", "9" ]
-            ]
-            --|> hideColumnHeaders
-            --|> hideRowHeaders
-            |> setColumnHeadings [ "one", "two", "three" ]
-            |> setRowHeadings [ "A", "B", "C" ]
-            |> render
-        ]
+    let
+        resultTable =
+            simpleTable
+                [ [ "1", "2", "3" ]
+                , [ "4", "5", "6" ]
+                , [ "7", "8", "9" ]
+                ]
+                --|> hideColumnHeaders
+                --|> hideRowHeaders
+                |> setColumnHeadings [ "one", "two", "three" ]
+                |> setRowHeadings [ "A", "B", "C" ]
+                |> render
+    in
+    case resultTable of
+        Ok table ->
+            div [] [ table ]
+
+        Err error ->
+            text error
