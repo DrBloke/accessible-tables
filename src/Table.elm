@@ -1,5 +1,7 @@
 module Table exposing
-    ( hideColumnHeaders
+    ( TableError(..)
+    , errorToString
+    , hideColumnHeaders
     , hideRowHeaders
     , render
     , setColumnHeadings
@@ -15,7 +17,7 @@ import List.Extra as List
 
 type TableConfiguration msg
     = ValidTable (Table msg)
-    | MalformedTable String
+    | MalformedTable TableError
 
 
 type Table msg
@@ -29,6 +31,11 @@ type Table msg
         , cells : List (List (Cell msg))
         , attributes : List (Html.Attribute msg)
         }
+
+
+type TableError
+    = NoData
+    | RowLengthsDoNotMatch Int
 
 
 type ColumnHeaders msg
@@ -101,28 +108,28 @@ simpleTable data =
             MalformedTable error
 
 
-allRowsEqualLength : List (List String) -> Result String Int
+allRowsEqualLength : List (List String) -> Result TableError Int
 allRowsEqualLength data =
     case data of
         [] ->
             Ok 0
 
         row1 :: remainingRows ->
-            allRowsEqualLengthHelper (List.length row1) remainingRows
+            allRowsEqualLengthHelper (List.length row1) 2 remainingRows
 
 
-allRowsEqualLengthHelper : Int -> List (List a) -> Result String Int
-allRowsEqualLengthHelper rowLength remainingRows =
+allRowsEqualLengthHelper : Int -> Int -> List (List a) -> Result TableError Int
+allRowsEqualLengthHelper rowLength rowNumber remainingRows =
     case remainingRows of
         [] ->
             Ok rowLength
 
         thisRow :: rest ->
             if List.length thisRow == rowLength then
-                allRowsEqualLengthHelper rowLength rest
+                allRowsEqualLengthHelper rowLength (rowNumber + 1) rest
 
             else
-                Err "row lengths don't match"
+                Err (RowLengthsDoNotMatch rowNumber)
 
 
 hideColumnHeaders : TableConfiguration msg -> TableConfiguration msg
@@ -207,13 +214,23 @@ hideRowHeaders config =
                 )
 
 
-render : TableConfiguration msg -> Result String (Html msg)
+errorToString : TableError -> String
+errorToString error =
+    case error of
+        NoData ->
+            "No Data"
+
+        RowLengthsDoNotMatch rowNumber ->
+            "Every line of data should be equal in length, but row " ++ String.fromInt rowNumber ++ " has a different number of data points"
+
+
+render : TableConfiguration msg -> Result TableError (Html msg)
 render config =
     case config of
         ValidTable (Table tableConfig) ->
             case tableConfig.cells of
                 [ [] ] ->
-                    Err "no data"
+                    Err NoData
 
                 _ ->
                     let

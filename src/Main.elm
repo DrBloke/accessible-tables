@@ -4,7 +4,17 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
-import Table exposing (hideColumnHeaders, hideRowHeaders, render, setColumnHeadings, setRowHeadings, simpleTable)
+import Table
+    exposing
+        ( TableError(..)
+        , errorToString
+        , hideColumnHeaders
+        , hideRowHeaders
+        , render
+        , setColumnHeadings
+        , setRowHeadings
+        , simpleTable
+        )
 
 
 main =
@@ -38,7 +48,7 @@ view model =
             simpleTable
                 [ [ "1", "2", "3" ]
                 , [ "4", "5", "6" ]
-                , [ "7", "8", "9" ]
+                , [ "7", "8" ]
                 ]
                 --|> hideColumnHeaders
                 --|> hideRowHeaders
@@ -51,4 +61,4 @@ view model =
             div [] [ table ]
 
         Err error ->
-            text error
+            text (errorToString error)
