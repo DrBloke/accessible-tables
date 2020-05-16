@@ -31,6 +31,7 @@ type TableConfiguration msg
 type TableError
     = NoData
     | RowLengthsDoNotMatch Int
+    | ColumnHeadingMismatch
 
 
 type ColumnHeaders msg
@@ -135,7 +136,7 @@ hideColumnHeaders config =
 
 
 setColumnHeadings : List String -> Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
-setColumnHeadings columns config =
+setColumnHeadings columns resultConfig =
     --check that number equals number of columns
     Result.map
         (\(TableConfiguration tableConfig) ->
@@ -156,7 +157,15 @@ setColumnHeadings columns config =
                             )
                 }
         )
-        config
+        resultConfig
+        |> Result.andThen
+            (\(TableConfiguration tableConfig) ->
+                if List.length columns == (List.head tableConfig.cells |> Maybe.withDefault [] |> List.length) then
+                    Ok (TableConfiguration tableConfig)
+
+                else
+                    Err ColumnHeadingMismatch
+            )
 
 
 setRowHeadings : List String -> Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
@@ -199,6 +208,9 @@ errorToString error =
 
         RowLengthsDoNotMatch rowNumber ->
             "Every line of data should be equal in length, but row " ++ String.fromInt rowNumber ++ " has a different number of data points"
+
+        ColumnHeadingMismatch ->
+            "The number of column headings does not match the number of data points in each row. "
 
 
 render : Result TableError (TableConfiguration msg) -> Result TableError (Html msg)
