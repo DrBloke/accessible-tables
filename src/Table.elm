@@ -32,6 +32,7 @@ type TableError
     = NoData
     | RowLengthsDoNotMatch Int
     | ColumnHeadingMismatch
+    | RowHeadingMismatch
 
 
 type ColumnHeaders msg
@@ -138,26 +139,26 @@ hideColumnHeaders config =
 setColumnHeadings : List String -> Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
 setColumnHeadings columns resultConfig =
     --check that number equals number of columns
-    Result.map
-        (\(TableConfiguration tableConfig) ->
-            TableConfiguration
-                { tableConfig
-                    | columnHeaders =
-                        ColumnHeadersSimple
-                            (List.map
-                                (\label ->
-                                    ColumnHeaderSingle
-                                        (ColumnHeader
-                                            { label = Html.text label
-                                            , attributes = []
-                                            }
-                                        )
+    resultConfig
+        |> Result.map
+            (\(TableConfiguration tableConfig) ->
+                TableConfiguration
+                    { tableConfig
+                        | columnHeaders =
+                            ColumnHeadersSimple
+                                (List.map
+                                    (\label ->
+                                        ColumnHeaderSingle
+                                            (ColumnHeader
+                                                { label = Html.text label
+                                                , attributes = []
+                                                }
+                                            )
+                                    )
+                                    columns
                                 )
-                                columns
-                            )
-                }
-        )
-        resultConfig
+                    }
+            )
         |> Result.andThen
             (\(TableConfiguration tableConfig) ->
                 if List.length columns == (List.head tableConfig.cells |> Maybe.withDefault [] |> List.length) then
@@ -171,26 +172,34 @@ setColumnHeadings columns resultConfig =
 setRowHeadings : List String -> Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
 setRowHeadings rows config =
     --check that number equals number of rows
-    Result.map
-        (\(TableConfiguration tableConfig) ->
-            TableConfiguration
-                { tableConfig
-                    | rowHeaders =
-                        RowHeadersSimple
-                            (List.map
-                                (\label ->
-                                    RowHeaderSingle
-                                        (RowHeader
-                                            { label = Html.text label
-                                            , attributes = []
-                                            }
-                                        )
+    config
+        |> Result.map
+            (\(TableConfiguration tableConfig) ->
+                TableConfiguration
+                    { tableConfig
+                        | rowHeaders =
+                            RowHeadersSimple
+                                (List.map
+                                    (\label ->
+                                        RowHeaderSingle
+                                            (RowHeader
+                                                { label = Html.text label
+                                                , attributes = []
+                                                }
+                                            )
+                                    )
+                                    rows
                                 )
-                                rows
-                            )
-                }
-        )
-        config
+                    }
+            )
+        |> Result.andThen
+            (\(TableConfiguration tableConfig) ->
+                if List.length rows == List.length tableConfig.cells then
+                    Ok (TableConfiguration tableConfig)
+
+                else
+                    Err RowHeadingMismatch
+            )
 
 
 hideRowHeaders : Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
@@ -211,6 +220,9 @@ errorToString error =
 
         ColumnHeadingMismatch ->
             "The number of column headings does not match the number of data points in each row. "
+
+        RowHeadingMismatch ->
+            "The number of row headings does not match the number of rows of data. "
 
 
 render : Result TableError (TableConfiguration msg) -> Result TableError (Html msg)
