@@ -88,8 +88,23 @@ simpleTable data =
     case allRowsEqualLength data of
         Ok noOfCols ->
             Ok
+                
+                
+                
                 (TableConfiguration
-                    { columnHeaders = ColumnHeadersSimple (List.range 1 noOfCols |> List.map (\colNo -> ColumnHeaderSingle (ColumnHeader { label = text (String.fromInt colNo), attributes = [] })))
+                    { columnHeaders =
+                        ColumnHeadersSimple
+                            (List.range 1 noOfCols
+                                |> List.map
+                                    (\colNo ->
+                                        ColumnHeaderSingle
+                                            (ColumnHeader
+                                                { label = text (String.fromInt colNo)
+                                                , attributes = []
+                                                }
+                                            )
+                                    )
+                            )
                     , columnHeadersShown = True
                     , rowHeaders = RowHeadersSimple (List.range 1 (List.length data) |> List.map (\rowNo -> RowHeaderSingle (RowHeader { label = text (String.fromInt rowNo), attributes = [] })))
                     , rowHeadersShown = True
