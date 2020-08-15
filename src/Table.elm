@@ -1,8 +1,10 @@
 module Table exposing
-    ( TableError(..)
+    ( ComplexHeading(..)
+    , Headings(..)
+    , TableError(..)
     , errorToString
-    , hideColumnHeaders
-    , hideRowHeaders
+    , hideColumnHeadings
+    , hideRowHeadings
     , render
     , setColumnHeadings
     , setRowHeadings
@@ -17,10 +19,10 @@ import List.Extra as List
 
 type TableConfiguration msg
     = TableConfiguration
-        { columnHeaders : ColumnHeaders msg
-        , columnHeadersShown : Bool
-        , rowHeaders : RowHeaders msg
-        , rowHeadersShown : Bool
+        { columnHeadings : ColumnHeadings msg
+        , columnHeadingsShown : Bool
+        , rowHeadings : RowHeadings msg
+        , rowHeadingsShown : Bool
         , caption : Maybe (Html msg)
         , summary : Maybe (Html msg)
         , cells : List (List (Cell msg))
@@ -35,41 +37,41 @@ type TableError
     | RowHeadingMismatch
 
 
-type ColumnHeaders msg
-    = ColumnHeadersSimple (List (ColumnHeaderSingle msg))
-    | ColumnHeadersComplex (List (ColumnHeaderGroup msg))
+type ColumnHeadings msg
+    = ColumnHeadingsSimple (List (ColumnHeadingSingle msg))
+    | ColumnHeadingsComplex (List (ColumnHeadingGroup msg))
 
 
-type ColumnHeaderSingle msg
-    = ColumnHeaderSingle (ColumnHeader msg)
+type ColumnHeadingSingle msg
+    = ColumnHeadingSingle (ColumnHeading msg)
 
 
-type ColumnHeaderGroup msg
-    = ColumnHeaderGroup (ColumnHeader msg) (List (ColumnHeader msg))
+type ColumnHeadingGroup msg
+    = ColumnHeadingGroup (ColumnHeading msg) (List (ColumnHeading msg))
 
 
-type ColumnHeader msg
-    = ColumnHeader
+type ColumnHeading msg
+    = ColumnHeading
         { label : Html msg
         , attributes : List (Html.Attribute msg)
         }
 
 
-type RowHeaders msg
-    = RowHeadersSimple (List (RowHeaderSingle msg))
-    | RowHeadersComplex (List (RowHeaderGroup msg))
+type RowHeadings msg
+    = RowHeadingsSimple (List (RowHeadingSingle msg))
+    | RowHeadingsComplex (List (RowHeadingGroup msg))
 
 
-type RowHeaderSingle msg
-    = RowHeaderSingle (RowHeader msg)
+type RowHeadingSingle msg
+    = RowHeadingSingle (RowHeading msg)
 
 
-type RowHeaderGroup msg
-    = RowHeaderGroup (RowHeader msg) (List (RowHeader msg))
+type RowHeadingGroup msg
+    = RowHeadingGroup (RowHeading msg) (List (RowHeading msg))
 
 
-type RowHeader msg
-    = RowHeader
+type RowHeading msg
+    = RowHeading
         { label : Html msg
         , attributes : List (Html.Attribute msg)
         }
@@ -82,32 +84,45 @@ type Cell msg
         }
 
 
+type Headings
+    = Headings (List String)
+    | ComplexHeadings (List ComplexHeading)
+
+
+type ComplexHeading
+    = H String (List String)
+
+
 simpleTable : List (List String) -> Result TableError (TableConfiguration msg)
 simpleTable data =
     -- do a check that all rows have equal number of cells
     case allRowsEqualLength data of
         Ok noOfCols ->
             Ok
-                
-                
-                
                 (TableConfiguration
-                    { columnHeaders =
-                        ColumnHeadersSimple
+                    { columnHeadings =
+                        ColumnHeadingsSimple
                             (List.range 1 noOfCols
                                 |> List.map
                                     (\colNo ->
-                                        ColumnHeaderSingle
-                                            (ColumnHeader
-                                                { label = text (String.fromInt colNo)
+                                        ColumnHeadingSingle
+                                            (ColumnHeading
+                                                { label = text <| "Column " ++ String.fromInt colNo
                                                 , attributes = []
                                                 }
                                             )
                                     )
                             )
-                    , columnHeadersShown = True
-                    , rowHeaders = RowHeadersSimple (List.range 1 (List.length data) |> List.map (\rowNo -> RowHeaderSingle (RowHeader { label = text (String.fromInt rowNo), attributes = [] })))
-                    , rowHeadersShown = True
+                    , columnHeadingsShown = True
+                    , rowHeadings =
+                        RowHeadingsSimple
+                            (List.range 1 (List.length data)
+                                |> List.map
+                                    (\rowNo ->
+                                        RowHeadingSingle (RowHeading { label = text <| "Row " ++ String.fromInt rowNo, attributes = [] })
+                                    )
+                            )
+                    , rowHeadingsShown = True
                     , caption = Nothing
                     , summary = Nothing
                     , cells =
@@ -144,44 +159,101 @@ allRowsEqualLengthHelper rowLength rowNumber remainingRows =
                 Err (RowLengthsDoNotMatch rowNumber)
 
 
-hideColumnHeaders : Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
-hideColumnHeaders config =
+hideColumnHeadings : Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
+hideColumnHeadings config =
     Result.map
-        (\(TableConfiguration tableConfig) -> TableConfiguration { tableConfig | columnHeadersShown = False })
+        (\(TableConfiguration tableConfig) -> TableConfiguration { tableConfig | columnHeadingsShown = False })
         config
 
 
-setColumnHeadings : List String -> Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
-setColumnHeadings columns resultConfig =
-    --check that number equals number of columns
-    resultConfig
-        |> Result.map
-            (\(TableConfiguration tableConfig) ->
-                TableConfiguration
-                    { tableConfig
-                        | columnHeaders =
-                            ColumnHeadersSimple
-                                (List.map
-                                    (\label ->
-                                        ColumnHeaderSingle
-                                            (ColumnHeader
-                                                { label = Html.text label
-                                                , attributes = []
-                                                }
+setColumnHeadings : Headings -> Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
+setColumnHeadings headings_ resultConfig =
+    case headings_ of
+        Headings headings ->
+            resultConfig
+                |> Result.map
+                    (\(TableConfiguration tableConfig) ->
+                        TableConfiguration
+                            { tableConfig
+                                | columnHeadings =
+                                    ColumnHeadingsSimple
+                                        (List.map
+                                            (\label ->
+                                                ColumnHeadingSingle
+                                                    (ColumnHeading
+                                                        { label = Html.text label
+                                                        , attributes = []
+                                                        }
+                                                    )
                                             )
-                                    )
-                                    columns
-                                )
-                    }
-            )
-        |> Result.andThen
-            (\(TableConfiguration tableConfig) ->
-                if List.length columns == (List.head tableConfig.cells |> Maybe.withDefault [] |> List.length) then
-                    Ok (TableConfiguration tableConfig)
+                                            headings
+                                        )
+                            }
+                    )
+                --check that number equals number of headings
+                |> Result.andThen
+                    (\(TableConfiguration tableConfig) ->
+                        if List.length headings == (List.head tableConfig.cells |> Maybe.withDefault [] |> List.length) then
+                            Ok (TableConfiguration tableConfig)
 
-                else
-                    Err ColumnHeadingMismatch
-            )
+                        else
+                            Err ColumnHeadingMismatch
+                    )
+
+        ComplexHeadings complexHeadings ->
+            resultConfig
+                |> Result.map
+                    (\(TableConfiguration tableConfig) ->
+                        TableConfiguration
+                            { tableConfig
+                                | columnHeadings =
+                                    ColumnHeadingsComplex
+                                        (List.map
+                                            (\(H mainHeading subHeadings) ->
+                                                ColumnHeadingGroup
+                                                    (ColumnHeading
+                                                        { label = Html.text mainHeading
+                                                        , attributes = []
+                                                        }
+                                                    )
+                                                    (List.map
+                                                        (\subHeading ->
+                                                            ColumnHeading
+                                                                { label = Html.text subHeading
+                                                                , attributes = []
+                                                                }
+                                                        )
+                                                        subHeadings
+                                                    )
+                                            )
+                                            complexHeadings
+                                        )
+                            }
+                    )
+                --check that number equals number of headings
+                |> Result.andThen
+                    (\(TableConfiguration tableConfig) ->
+                        if noOfComplexColumnHeadings complexHeadings == (List.head tableConfig.cells |> Maybe.withDefault [] |> List.length) then
+                            Ok (TableConfiguration tableConfig)
+
+                        else
+                            Err ColumnHeadingMismatch
+                    )
+
+
+noOfComplexColumnHeadings : List ComplexHeading -> Int
+noOfComplexColumnHeadings complexHeadings =
+    let
+        addHeaders : ComplexHeading -> Int -> Int
+        addHeaders header acc =
+            case header of
+                H _ [] ->
+                    acc + 1
+
+                H _ subHeadings ->
+                    acc + List.length subHeadings
+    in
+    List.foldl addHeaders 0 complexHeadings
 
 
 setRowHeadings : List String -> Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
@@ -192,12 +264,12 @@ setRowHeadings rows config =
             (\(TableConfiguration tableConfig) ->
                 TableConfiguration
                     { tableConfig
-                        | rowHeaders =
-                            RowHeadersSimple
+                        | rowHeadings =
+                            RowHeadingsSimple
                                 (List.map
                                     (\label ->
-                                        RowHeaderSingle
-                                            (RowHeader
+                                        RowHeadingSingle
+                                            (RowHeading
                                                 { label = Html.text label
                                                 , attributes = []
                                                 }
@@ -217,10 +289,10 @@ setRowHeadings rows config =
             )
 
 
-hideRowHeaders : Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
-hideRowHeaders config =
+hideRowHeadings : Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
+hideRowHeadings config =
     Result.map
-        (\(TableConfiguration tableConfig) -> TableConfiguration { tableConfig | rowHeadersShown = False })
+        (\(TableConfiguration tableConfig) -> TableConfiguration { tableConfig | rowHeadingsShown = False })
         config
 
 
@@ -245,24 +317,25 @@ render config =
     case config of
         Ok (TableConfiguration tableConfig) ->
             let
-                spacer =
-                    if tableConfig.rowHeadersShown then
-                        [ td [] [] ]
-
-                    else
-                        []
-
                 columnHeadings =
-                    case tableConfig.columnHeaders of
-                        ColumnHeadersSimple [] ->
+                    case tableConfig.columnHeadings of
+                        ColumnHeadingsSimple [] ->
                             []
 
-                        ColumnHeadersSimple cols ->
+                        ColumnHeadingsSimple cols ->
+                            let
+                                spacer =
+                                    if tableConfig.rowHeadingsShown then
+                                        [ td [] [] ]
+
+                                    else
+                                        []
+                            in
                             [ thead []
-                                [ tr [ hidden (not tableConfig.columnHeadersShown) ]
+                                [ tr [ hidden (not tableConfig.columnHeadingsShown) ]
                                     (spacer
                                         ++ List.map
-                                            (\(ColumnHeaderSingle (ColumnHeader colInfo)) ->
+                                            (\(ColumnHeadingSingle (ColumnHeading colInfo)) ->
                                                 th [ scope "col" ] [ colInfo.label ]
                                             )
                                             cols
@@ -270,8 +343,87 @@ render config =
                                 ]
                             ]
 
-                        _ ->
-                            [ text "TODO complex" ]
+                        ColumnHeadingsComplex [] ->
+                            []
+
+                        ColumnHeadingsComplex complexHeadings ->
+                            let
+                                colStructure =
+                                    let
+                                        colSpacer =
+                                            if tableConfig.rowHeadingsShown then
+                                                [ col [] [] ]
+
+                                            else
+                                                []
+
+                                        span_ n =
+                                            if n == 0 then
+                                                []
+
+                                            else
+                                                [ attribute "span" (String.fromInt n) ]
+                                    in
+                                    colgroup []
+                                        (colSpacer
+                                            ++ List.map
+                                                (\(ColumnHeadingGroup (ColumnHeading colInfo) subHeads) ->
+                                                    col (span_ (List.length subHeads)) []
+                                                )
+                                                complexHeadings
+                                        )
+
+                                spacer =
+                                    if tableConfig.rowHeadingsShown then
+                                        [ td [] [] ]
+
+                                    else
+                                        []
+
+                                mainHeadings : List (Html msg)
+                                mainHeadings =
+                                    let
+                                        colspan_ n =
+                                            if n == 0 then
+                                                []
+
+                                            else
+                                                [ colspan n ]
+
+                                        rowspan_ n =
+                                            if n == 0 then
+                                                [ rowspan 2 ]
+
+                                            else
+                                                []
+                                    in
+                                    List.map
+                                        (\(ColumnHeadingGroup (ColumnHeading colInfo) subHeads) ->
+                                            th ([ scope "col" ] ++ colspan_ (List.length subHeads) ++ rowspan_ (List.length subHeads)) [ colInfo.label ]
+                                        )
+                                        complexHeadings
+
+                                subHeadings : List (Html msg)
+                                subHeadings =
+                                    List.map
+                                        (\(ColumnHeadingGroup (ColumnHeading _) subHeads) ->
+                                            List.map
+                                                (\(ColumnHeading colInfo) ->
+                                                    th [ scope "col" ] [ colInfo.label ]
+                                                )
+                                                subHeads
+                                        )
+                                        complexHeadings
+                                        |> List.concat
+                            in
+                            [ colStructure
+                            , thead []
+                                [ tr [ hidden (not tableConfig.columnHeadingsShown) ]
+                                    (spacer ++ mainHeadings)
+                                , tr [ hidden (not tableConfig.columnHeadingsShown) ]
+                                    (spacer ++ subHeadings)
+                                ]
+                            ]
 
                 body =
                     case tableConfig.cells of
@@ -279,18 +431,18 @@ render config =
                             []
 
                         _ ->
-                            case tableConfig.rowHeaders of
-                                RowHeadersSimple rowHeaders ->
+                            case tableConfig.rowHeadings of
+                                RowHeadingsSimple rowHeadings ->
                                     [ tbody []
-                                        (List.zip tableConfig.cells rowHeaders
+                                        (List.zip tableConfig.cells rowHeadings
                                             |> List.map
-                                                (\( rowDataInfo, RowHeaderSingle (RowHeader rowHeaderInfo) ) ->
-                                                    tr [] ([ th ([ scope "row", hidden (not tableConfig.rowHeadersShown) ] ++ rowHeaderInfo.attributes) [ rowHeaderInfo.label ] ] ++ List.map (\(Cell cell) -> td cell.attributes [ cell.value ]) rowDataInfo)
+                                                (\( rowDataInfo, RowHeadingSingle (RowHeading rowHeadingInfo) ) ->
+                                                    tr [] ([ th ([ scope "row", hidden (not tableConfig.rowHeadingsShown) ] ++ rowHeadingInfo.attributes) [ rowHeadingInfo.label ] ] ++ List.map (\(Cell cell) -> td cell.attributes [ cell.value ]) rowDataInfo)
                                                 )
                                         )
                                     ]
 
-                                RowHeadersComplex _ ->
+                                RowHeadingsComplex _ ->
                                     [ tbody [] [ tr [] [ td [] [ text "not implemented" ] ] ] ]
             in
             case body of

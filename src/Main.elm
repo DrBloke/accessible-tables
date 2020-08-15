@@ -6,10 +6,12 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
 import Table
     exposing
-        ( TableError(..)
+        ( ComplexHeading(..)
+        , Headings(..)
+        , TableError(..)
         , errorToString
-        , hideColumnHeaders
-        , hideRowHeaders
+        , hideColumnHeadings
+        , hideRowHeadings
         , render
         , setColumnHeadings
         , setRowHeadings
@@ -46,13 +48,19 @@ view model =
     let
         resultTable =
             simpleTable
-                [ [ "1", "2", "3" ]
-                , [ "4", "5", "6" ]
-                , [ "7", "8", "9" ]
+                [ [ "1", "2", "3", "4", "5" ]
+                , [ "1", "2", "3", "4", "5" ]
+                , [ "1", "2", "3", "4", "5" ]
                 ]
-                --|> hideColumnHeaders
-                --|> hideRowHeaders
-                |> setColumnHeadings [ "one", "two", "three" ]
+                --|> hideColumnHeadings
+                --|> hideRowHeadings
+                |> setColumnHeadings
+                    (ComplexHeadings
+                        [ H "One" [ "sub 1", "sub2" ]
+                        , H "Two" []
+                        , H "Three" [ "sub 1", "sub2" ]
+                        ]
+                    )
                 |> setRowHeadings [ "A", "B", "C" ]
                 |> render
     in
