@@ -5177,6 +5177,9 @@ var $author$project$Table$H = F2(
 	function (a, b) {
 		return {$: 'H', a: a, b: b};
 	});
+var $author$project$Table$Headings = function (a) {
+	return {$: 'Headings', a: a};
+};
 var $elm$html$Html$br = _VirtualDom_node('br');
 var $elm$html$Html$div = _VirtualDom_node('div');
 var $author$project$Table$errorToString = function (error) {
@@ -5563,7 +5566,7 @@ var $elm$core$Result$map = F2(
 			return $elm$core$Result$Err(e);
 		}
 	});
-var $author$project$Table$noOfComplexColumnHeadings = function (complexHeadings) {
+var $author$project$Table$noOfComplexHeadings = function (complexHeadings) {
 	var addHeaders = F2(
 		function (header, acc) {
 			if (!header.b.b) {
@@ -5631,7 +5634,7 @@ var $author$project$Table$setColumnHeadings = F2(
 				function (_v5) {
 					var tableConfig = _v5.a;
 					return _Utils_eq(
-						$author$project$Table$noOfComplexColumnHeadings(complexHeadings),
+						$author$project$Table$noOfComplexHeadings(complexHeadings),
 						$elm$core$List$length(
 							A2(
 								$elm$core$Maybe$withDefault,
@@ -5680,47 +5683,104 @@ var $author$project$Table$setColumnHeadings = F2(
 var $author$project$Table$RowHeading = function (a) {
 	return {$: 'RowHeading', a: a};
 };
+var $author$project$Table$RowHeadingGroup = F2(
+	function (a, b) {
+		return {$: 'RowHeadingGroup', a: a, b: b};
+	});
 var $author$project$Table$RowHeadingMismatch = {$: 'RowHeadingMismatch'};
 var $author$project$Table$RowHeadingSingle = function (a) {
 	return {$: 'RowHeadingSingle', a: a};
+};
+var $author$project$Table$RowHeadingsComplex = function (a) {
+	return {$: 'RowHeadingsComplex', a: a};
 };
 var $author$project$Table$RowHeadingsSimple = function (a) {
 	return {$: 'RowHeadingsSimple', a: a};
 };
 var $author$project$Table$setRowHeadings = F2(
-	function (rows, config) {
-		return A2(
-			$elm$core$Result$andThen,
-			function (_v1) {
-				var tableConfig = _v1.a;
-				return _Utils_eq(
-					$elm$core$List$length(rows),
-					$elm$core$List$length(tableConfig.cells)) ? $elm$core$Result$Ok(
-					$author$project$Table$TableConfiguration(tableConfig)) : $elm$core$Result$Err($author$project$Table$RowHeadingMismatch);
-			},
-			A2(
-				$elm$core$Result$map,
-				function (_v0) {
-					var tableConfig = _v0.a;
-					return $author$project$Table$TableConfiguration(
-						_Utils_update(
-							tableConfig,
-							{
-								rowHeadings: $author$project$Table$RowHeadingsSimple(
-									A2(
-										$elm$core$List$map,
-										function (label) {
-											return $author$project$Table$RowHeadingSingle(
-												$author$project$Table$RowHeading(
-													{
-														attributes: _List_Nil,
-														label: $elm$html$Html$text(label)
-													}));
-										},
-										rows))
-							}));
+	function (headings_, resultConfig) {
+		if (headings_.$ === 'Headings') {
+			var headings = headings_.a;
+			return A2(
+				$elm$core$Result$andThen,
+				function (_v2) {
+					var tableConfig = _v2.a;
+					return _Utils_eq(
+						$elm$core$List$length(headings),
+						$elm$core$List$length(tableConfig.cells)) ? $elm$core$Result$Ok(
+						$author$project$Table$TableConfiguration(tableConfig)) : $elm$core$Result$Err($author$project$Table$RowHeadingMismatch);
 				},
-				config));
+				A2(
+					$elm$core$Result$map,
+					function (_v1) {
+						var tableConfig = _v1.a;
+						return $author$project$Table$TableConfiguration(
+							_Utils_update(
+								tableConfig,
+								{
+									rowHeadings: $author$project$Table$RowHeadingsSimple(
+										A2(
+											$elm$core$List$map,
+											function (label) {
+												return $author$project$Table$RowHeadingSingle(
+													$author$project$Table$RowHeading(
+														{
+															attributes: _List_Nil,
+															label: $elm$html$Html$text(label)
+														}));
+											},
+											headings))
+								}));
+					},
+					resultConfig));
+		} else {
+			var complexHeadings = headings_.a;
+			return A2(
+				$elm$core$Result$andThen,
+				function (_v5) {
+					var tableConfig = _v5.a;
+					return _Utils_eq(
+						$author$project$Table$noOfComplexHeadings(complexHeadings),
+						$elm$core$List$length(tableConfig.cells)) ? $elm$core$Result$Ok(
+						$author$project$Table$TableConfiguration(tableConfig)) : $elm$core$Result$Err($author$project$Table$RowHeadingMismatch);
+				},
+				A2(
+					$elm$core$Result$map,
+					function (_v3) {
+						var tableConfig = _v3.a;
+						return $author$project$Table$TableConfiguration(
+							_Utils_update(
+								tableConfig,
+								{
+									rowHeadings: $author$project$Table$RowHeadingsComplex(
+										A2(
+											$elm$core$List$map,
+											function (_v4) {
+												var mainHeading = _v4.a;
+												var subHeadings = _v4.b;
+												return A2(
+													$author$project$Table$RowHeadingGroup,
+													$author$project$Table$RowHeading(
+														{
+															attributes: _List_Nil,
+															label: $elm$html$Html$text(mainHeading)
+														}),
+													A2(
+														$elm$core$List$map,
+														function (subHeading) {
+															return $author$project$Table$RowHeading(
+																{
+																	attributes: _List_Nil,
+																	label: $elm$html$Html$text(subHeading)
+																});
+														},
+														subHeadings));
+											},
+											complexHeadings))
+								}));
+					},
+					resultConfig));
+		}
 	});
 var $author$project$Table$Cell = function (a) {
 	return {$: 'Cell', a: a};
@@ -5830,11 +5890,46 @@ var $author$project$Table$simpleTable = function (data) {
 	}
 };
 var $author$project$Main$view = function (model) {
+	var table3 = $author$project$Table$render(
+		A2(
+			$author$project$Table$setRowHeadings,
+			$author$project$Table$ComplexHeadings(
+				_List_fromArray(
+					[
+						A2(
+						$author$project$Table$H,
+						'Mars',
+						_List_fromArray(
+							['Produced', 'Sold'])),
+						A2(
+						$author$project$Table$H,
+						'Venus',
+						_List_fromArray(
+							['Produced', 'Sold']))
+					])),
+			A2(
+				$author$project$Table$setColumnHeadings,
+				$author$project$Table$Headings(
+					_List_fromArray(
+						['Teddy Bears', 'Board Games'])),
+				$author$project$Table$simpleTable(
+					_List_fromArray(
+						[
+							_List_fromArray(
+							['50,000', '10,000']),
+							_List_fromArray(
+							['30,000', '5,000']),
+							_List_fromArray(
+							['100,000', '12,000']),
+							_List_fromArray(
+							['80,000', '9,000'])
+						])))));
 	var table2 = $author$project$Table$render(
 		A2(
 			$author$project$Table$setRowHeadings,
-			_List_fromArray(
-				['A', 'B', 'C']),
+			$author$project$Table$Headings(
+				_List_fromArray(
+					['A', 'B', 'C'])),
 			A2(
 				$author$project$Table$setColumnHeadings,
 				$author$project$Table$ComplexHeadings(
@@ -5865,8 +5960,9 @@ var $author$project$Main$view = function (model) {
 	var table1 = $author$project$Table$render(
 		A2(
 			$author$project$Table$setRowHeadings,
-			_List_fromArray(
-				['Teddy Bears', 'Board Games']),
+			$author$project$Table$Headings(
+				_List_fromArray(
+					['Teddy Bears', 'Board Games'])),
 			A2(
 				$author$project$Table$setColumnHeadings,
 				$author$project$Table$ComplexHeadings(
@@ -5921,6 +6017,21 @@ var $author$project$Main$view = function (model) {
 							[table]));
 				} else {
 					var error = table2.a;
+					return $elm$html$Html$text(
+						$author$project$Table$errorToString(error));
+				}
+			}(),
+				A2($elm$html$Html$br, _List_Nil, _List_Nil),
+				function () {
+				if (table3.$ === 'Ok') {
+					var table = table3.a;
+					return A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[table]));
+				} else {
+					var error = table3.a;
 					return $elm$html$Html$text(
 						$author$project$Table$errorToString(error));
 				}

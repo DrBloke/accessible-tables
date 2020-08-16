@@ -61,7 +61,7 @@ view model =
                         , H "Three" [ "sub 1", "sub2" ]
                         ]
                     )
-                |> setRowHeadings [ "A", "B", "C" ]
+                |> setRowHeadings (Headings [ "A", "B", "C" ])
                 |> render
 
         table1 =
@@ -77,7 +77,25 @@ view model =
                         , H "Venus" [ "Produced", "Sold" ]
                         ]
                     )
-                |> setRowHeadings [ "Teddy Bears", "Board Games" ]
+                |> setRowHeadings (Headings [ "Teddy Bears", "Board Games" ])
+                |> render
+
+        table3 =
+            simpleTable
+                [ [ "50,000", "10,000" ]
+                , [ "30,000", "5,000" ]
+                , [ "100,000", "12,000" ]
+                , [ "80,000", "9,000" ]
+                ]
+                --|> hideColumnHeadings
+                --|> hideRowHeadings
+                |> setColumnHeadings (Headings [ "Teddy Bears", "Board Games" ])
+                |> setRowHeadings
+                    (ComplexHeadings
+                        [ H "Mars" [ "Produced", "Sold" ]
+                        , H "Venus" [ "Produced", "Sold" ]
+                        ]
+                    )
                 |> render
     in
     div []
@@ -89,6 +107,13 @@ view model =
                 text (errorToString error)
         , br [] []
         , case table2 of
+            Ok table ->
+                div [] [ table ]
+
+            Err error ->
+                text (errorToString error)
+        , br [] []
+        , case table3 of
             Ok table ->
                 div [] [ table ]
 

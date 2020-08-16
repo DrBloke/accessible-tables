@@ -233,7 +233,7 @@ setColumnHeadings headings_ resultConfig =
                 --check that number equals number of headings
                 |> Result.andThen
                     (\(TableConfiguration tableConfig) ->
-                        if noOfComplexColumnHeadings complexHeadings == (List.head tableConfig.cells |> Maybe.withDefault [] |> List.length) then
+                        if noOfComplexHeadings complexHeadings == (List.head tableConfig.cells |> Maybe.withDefault [] |> List.length) then
                             Ok (TableConfiguration tableConfig)
 
                         else
@@ -241,8 +241,8 @@ setColumnHeadings headings_ resultConfig =
                     )
 
 
-noOfComplexColumnHeadings : List ComplexHeading -> Int
-noOfComplexColumnHeadings complexHeadings =
+noOfComplexHeadings : List ComplexHeading -> Int
+noOfComplexHeadings complexHeadings =
     let
         addHeaders : ComplexHeading -> Int -> Int
         addHeaders header acc =
@@ -256,37 +256,79 @@ noOfComplexColumnHeadings complexHeadings =
     List.foldl addHeaders 0 complexHeadings
 
 
-setRowHeadings : List String -> Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
-setRowHeadings rows config =
+setRowHeadings : Headings -> Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
+setRowHeadings headings_ resultConfig =
     --check that number equals number of rows
-    config
-        |> Result.map
-            (\(TableConfiguration tableConfig) ->
-                TableConfiguration
-                    { tableConfig
-                        | rowHeadings =
-                            RowHeadingsSimple
-                                (List.map
-                                    (\label ->
-                                        RowHeadingSingle
-                                            (RowHeading
-                                                { label = Html.text label
-                                                , attributes = []
-                                                }
+    case headings_ of
+        Headings headings ->
+            resultConfig
+                |> Result.map
+                    (\(TableConfiguration tableConfig) ->
+                        TableConfiguration
+                            { tableConfig
+                                | rowHeadings =
+                                    RowHeadingsSimple
+                                        (List.map
+                                            (\label ->
+                                                RowHeadingSingle
+                                                    (RowHeading
+                                                        { label = Html.text label
+                                                        , attributes = []
+                                                        }
+                                                    )
                                             )
-                                    )
-                                    rows
-                                )
-                    }
-            )
-        |> Result.andThen
-            (\(TableConfiguration tableConfig) ->
-                if List.length rows == List.length tableConfig.cells then
-                    Ok (TableConfiguration tableConfig)
+                                            headings
+                                        )
+                            }
+                    )
+                |> Result.andThen
+                    (\(TableConfiguration tableConfig) ->
+                        if List.length headings == List.length tableConfig.cells then
+                            Ok (TableConfiguration tableConfig)
 
-                else
-                    Err RowHeadingMismatch
-            )
+                        else
+                            Err RowHeadingMismatch
+                    )
+
+        ComplexHeadings complexHeadings ->
+            resultConfig
+                |> Result.map
+                    (\(TableConfiguration tableConfig) ->
+                        TableConfiguration
+                            { tableConfig
+                                | rowHeadings =
+                                    RowHeadingsComplex
+                                        (List.map
+                                            (\(H mainHeading subHeadings) ->
+                                                RowHeadingGroup
+                                                    (RowHeading
+                                                        { label = Html.text mainHeading
+                                                        , attributes = []
+                                                        }
+                                                    )
+                                                    (List.map
+                                                        (\subHeading ->
+                                                            RowHeading
+                                                                { label = Html.text subHeading
+                                                                , attributes = []
+                                                                }
+                                                        )
+                                                        subHeadings
+                                                    )
+                                            )
+                                            complexHeadings
+                                        )
+                            }
+                    )
+                --check that number equals number of headings
+                |> Result.andThen
+                    (\(TableConfiguration tableConfig) ->
+                        if noOfComplexHeadings complexHeadings == (tableConfig.cells |> List.length) then
+                            Ok (TableConfiguration tableConfig)
+
+                        else
+                            Err RowHeadingMismatch
+                    )
 
 
 hideRowHeadings : Result TableError (TableConfiguration msg) -> Result TableError (TableConfiguration msg)
@@ -314,6 +356,10 @@ errorToString error =
 
 render : Result TableError (TableConfiguration msg) -> Result TableError (Html msg)
 render config =
+    -- let
+    --     _ =
+    --         Debug.log "configs" (Debug.toString config)
+    -- in
     case config of
         Ok (TableConfiguration tableConfig) ->
             let
