@@ -357,25 +357,23 @@ render config =
                                             else
                                                 []
 
-                                        span_ n =
+                                        colgroup_ n =
                                             if n == 0 then
-                                                []
+                                                col [] []
 
                                             else
-                                                [ attribute "span" (String.fromInt n) ]
+                                                colgroup [ attribute "span" (String.fromInt n) ] []
                                     in
-                                    colgroup []
-                                        (colSpacer
-                                            ++ List.map
-                                                (\(ColumnHeadingGroup (ColumnHeading colInfo) subHeads) ->
-                                                    col (span_ (List.length subHeads)) []
-                                                )
-                                                complexHeadings
-                                        )
+                                    colSpacer
+                                        ++ List.map
+                                            (\(ColumnHeadingGroup (ColumnHeading colInfo) subHeads) ->
+                                                colgroup_ (List.length subHeads)
+                                            )
+                                            complexHeadings
 
                                 spacer =
                                     if tableConfig.rowHeadingsShown then
-                                        [ td [] [] ]
+                                        [ td [ rowspan 2 ] [] ]
 
                                     else
                                         []
@@ -383,23 +381,16 @@ render config =
                                 mainHeadings : List (Html msg)
                                 mainHeadings =
                                     let
-                                        colspan_ n =
+                                        cols n =
                                             if n == 0 then
-                                                []
+                                                [ scope "col", rowspan 2 ]
 
                                             else
-                                                [ colspan n ]
-
-                                        rowspan_ n =
-                                            if n == 0 then
-                                                [ rowspan 2 ]
-
-                                            else
-                                                []
+                                                [ scope "colgroup", colspan n ]
                                     in
                                     List.map
                                         (\(ColumnHeadingGroup (ColumnHeading colInfo) subHeads) ->
-                                            th ([ scope "col" ] ++ colspan_ (List.length subHeads) ++ rowspan_ (List.length subHeads)) [ colInfo.label ]
+                                            th (cols (List.length subHeads)) [ colInfo.label ]
                                         )
                                         complexHeadings
 
@@ -416,14 +407,14 @@ render config =
                                         complexHeadings
                                         |> List.concat
                             in
-                            [ colStructure
-                            , thead []
-                                [ tr [ hidden (not tableConfig.columnHeadingsShown) ]
-                                    (spacer ++ mainHeadings)
-                                , tr [ hidden (not tableConfig.columnHeadingsShown) ]
-                                    (spacer ++ subHeadings)
-                                ]
-                            ]
+                            colStructure
+                                ++ [ thead []
+                                        [ tr [ hidden (not tableConfig.columnHeadingsShown) ]
+                                            (spacer ++ mainHeadings)
+                                        , tr [ hidden (not tableConfig.columnHeadingsShown) ]
+                                            subHeadings
+                                        ]
+                                   ]
 
                 body =
                     case tableConfig.cells of

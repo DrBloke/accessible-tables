@@ -46,7 +46,7 @@ update msg model =
 view : Model -> Html Msg
 view model =
     let
-        resultTable =
+        table2 =
             simpleTable
                 [ [ "1", "2", "3", "4", "5" ]
                 , [ "1", "2", "3", "4", "5" ]
@@ -63,10 +63,35 @@ view model =
                     )
                 |> setRowHeadings [ "A", "B", "C" ]
                 |> render
-    in
-    case resultTable of
-        Ok table ->
-            div [] [ table ]
 
-        Err error ->
-            text (errorToString error)
+        table1 =
+            simpleTable
+                [ [ "50,000", "30,000", "100,000", "80,000" ]
+                , [ "10,000", "5,000", "12,000", "9,000" ]
+                ]
+                --|> hideColumnHeadings
+                --|> hideRowHeadings
+                |> setColumnHeadings
+                    (ComplexHeadings
+                        [ H "Mars" [ "Produced", "Sold" ]
+                        , H "Venus" [ "Produced", "Sold" ]
+                        ]
+                    )
+                |> setRowHeadings [ "Teddy Bears", "Board Games" ]
+                |> render
+    in
+    div []
+        [ case table1 of
+            Ok table ->
+                div [] [ table ]
+
+            Err error ->
+                text (errorToString error)
+        , br [] []
+        , case table2 of
+            Ok table ->
+                div [] [ table ]
+
+            Err error ->
+                text (errorToString error)
+        ]
