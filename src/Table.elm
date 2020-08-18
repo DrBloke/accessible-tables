@@ -11,7 +11,6 @@ module Table exposing
     , simpleTable
     )
 
-import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import List.Extra as List
