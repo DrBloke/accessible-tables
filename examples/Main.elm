@@ -1,4 +1,4 @@
-module Main exposing (Model, Msg(..), init, main, update, view)
+module Main exposing (main)
 
 import Browser
 import Html exposing (..)
@@ -17,6 +17,48 @@ import Table
         , setRowHeadings
         , simpleTable
         )
+
+
+css : String
+css =
+    """
+html {
+        font-family: sans-serif;
+    }
+
+table {
+    border-collapse: collapse;
+    border: 2px solid rgb(200, 200, 200);
+    letter-spacing: 1px;
+    font-size: 0.8rem;
+}
+
+td,
+th {
+    border: 1px solid rgb(190, 190, 190);
+    padding: 10px 20px;
+}
+
+th {
+    background-color: rgb(235, 235, 235);
+}
+
+td {
+    text-align: center;
+}
+
+tr:nth-child(even) td {
+    background-color: rgb(250, 250, 250);
+}
+
+tr:nth-child(odd) td {
+    background-color: rgb(245, 245, 245);
+}
+
+caption {
+    padding: 10px;
+}
+    """
 
 
 main =
@@ -98,25 +140,28 @@ view model =
                     )
                 |> render
     in
-    div []
-        [ case table1 of
-            Ok table ->
-                div [] [ table ]
+    Html.div []
+        [ Html.node "style" [] [ Html.text css ]
+        , div []
+            [ case table1 of
+                Ok table ->
+                    div [] [ table ]
 
-            Err error ->
-                text (errorToString error)
-        , br [] []
-        , case table2 of
-            Ok table ->
-                div [] [ table ]
+                Err error ->
+                    text (errorToString error)
+            , br [] []
+            , case table2 of
+                Ok table ->
+                    div [] [ table ]
 
-            Err error ->
-                text (errorToString error)
-        , br [] []
-        , case table3 of
-            Ok table ->
-                div [] [ table ]
+                Err error ->
+                    text (errorToString error)
+            , br [] []
+            , case table3 of
+                Ok table ->
+                    div [] [ table ]
 
-            Err error ->
-                text (errorToString error)
+                Err error ->
+                    text (errorToString error)
+            ]
         ]
