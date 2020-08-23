@@ -4,7 +4,7 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onInput)
-import Table
+import Table as Table
     exposing
         ( ComplexHeading(..)
         , Headings(..)
@@ -12,10 +12,10 @@ import Table
         , errorToString
         , hideColumnHeadings
         , hideRowHeadings
-        , render
+        , view
         , setColumnHeadings
         , setRowHeadings
-        , simpleTable
+        , generate
         )
 
 
@@ -51,12 +51,16 @@ tr:nth-child(even) td {
     background-color: rgb(250, 250, 250);
 }
 
-tr:nth-child(odd) td {
+tr:nth-child(odd) td{
     background-color: rgb(245, 245, 245);
 }
 
 caption {
     padding: 10px;
+}
+
+tbody tr:hover td, tr:hover th[scope="row"] {
+  background: yellow;
 }
     """
 
@@ -89,56 +93,50 @@ view : Model -> Html Msg
 view model =
     let
         table2 =
-            simpleTable
+            generate
                 [ [ "1", "2", "3", "4", "5" ]
                 , [ "1", "2", "3", "4", "5" ]
                 , [ "1", "2", "3", "4", "5" ]
                 ]
-                --|> hideColumnHeadings
-                --|> hideRowHeadings
                 |> setColumnHeadings
                     (ComplexHeadings
-                        [ H "One" [ "sub 1", "sub2" ]
-                        , H "Two" []
-                        , H "Three" [ "sub 1", "sub2" ]
+                        [ HeadingAndSubHeadings "One" [ "sub 1", "sub2" ]
+                        , HeadingAndSubHeadings "Two" []
+                        , HeadingAndSubHeadings "Three" [ "sub 1", "sub2" ]
                         ]
                     )
                 |> setRowHeadings (Headings [ "A", "B", "C" ])
-                |> render
+                |> Table.view
 
         table1 =
-            simpleTable
+            generate
                 [ [ "50,000", "30,000", "100,000", "80,000" ]
                 , [ "10,000", "5,000", "12,000", "9,000" ]
                 ]
-                --|> hideColumnHeadings
-                --|> hideRowHeadings
                 |> setColumnHeadings
                     (ComplexHeadings
-                        [ H "Mars" [ "Produced", "Sold" ]
-                        , H "Venus" [ "Produced", "Sold" ]
+                        [ HeadingAndSubHeadings "Mars" [ "Produced", "Sold" ]
+                        , HeadingAndSubHeadings "Venus" [ "Produced", "Sold" ]
                         ]
                     )
                 |> setRowHeadings (Headings [ "Teddy Bears", "Board Games" ])
-                |> render
+                |> Table.view
 
         table3 =
-            simpleTable
+            generate
                 [ [ "50,000", "10,000" ]
                 , [ "30,000", "5,000" ]
                 , [ "100,000", "12,000" ]
                 , [ "80,000", "9,000" ]
                 ]
-                --|> hideColumnHeadings
-                --|> hideRowHeadings
                 |> setColumnHeadings (Headings [ "Teddy Bears", "Board Games" ])
                 |> setRowHeadings
                     (ComplexHeadings
-                        [ H "Mars" [ "Produced", "Sold" ]
-                        , H "Venus" [ "Produced", "Sold" ]
+                        [ HeadingAndSubHeadings "Mars" [ "Produced", "Sold" ]
+                        , HeadingAndSubHeadings "Venus" [ "Produced", "Sold" ]
                         ]
                     )
-                |> render
+                |> Table.view
     in
     Html.div []
         [ Html.node "style" [] [ Html.text css ]
