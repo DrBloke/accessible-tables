@@ -5,10 +5,10 @@ module Table exposing
     , errorToString
     , hideColumnHeadings
     , hideRowHeadings
-    , render
+    , view
     , setColumnHeadings
     , setRowHeadings
-    , simpleTable
+    , generate
     )
 
 import Html exposing (..)
@@ -89,11 +89,11 @@ type Headings
 
 
 type ComplexHeading
-    = H String (List String)
+    = HeadingAndSubHeadings String (List String)
 
 
-simpleTable : List (List String) -> Result TableError (TableConfiguration msg)
-simpleTable data =
+generate : List (List String) -> Result TableError (TableConfiguration msg)
+generate data =
     -- do a check that all rows have equal number of cells
     case allRowsEqualLength data of
         Ok noOfCols ->
@@ -208,7 +208,7 @@ setColumnHeadings headings_ resultConfig =
                                 | columnHeadings =
                                     ColumnHeadingsComplex
                                         (List.map
-                                            (\(H mainHeading subHeadings) ->
+                                            (\(HeadingAndSubHeadings mainHeading subHeadings) ->
                                                 ColumnHeadingGroup
                                                     (ColumnHeading
                                                         { label = Html.text mainHeading
@@ -246,10 +246,10 @@ noOfComplexHeadings complexHeadings =
         addHeaders : ComplexHeading -> Int -> Int
         addHeaders header acc =
             case header of
-                H _ [] ->
+                HeadingAndSubHeadings _ [] ->
                     acc + 1
 
-                H _ subHeadings ->
+                HeadingAndSubHeadings _ subHeadings ->
                     acc + List.length subHeadings
     in
     List.foldl addHeaders 0 complexHeadings
@@ -298,7 +298,7 @@ setRowHeadings headings_ resultConfig =
                                 | rowHeadings =
                                     RowHeadingsComplex
                                         (List.map
-                                            (\(H mainHeading subHeadings) ->
+                                            (\(HeadingAndSubHeadings mainHeading subHeadings) ->
                                                 RowHeadingGroup
                                                     (RowHeading
                                                         { label = Html.text mainHeading
@@ -353,8 +353,8 @@ errorToString error =
             "The number of row headings does not match the number of rows of data. "
 
 
-render : Result TableError (TableConfiguration msg) -> Result TableError (Html msg)
-render config =
+view : Result TableError (TableConfiguration msg) -> Result TableError (Html msg)
+view config =
     -- let
     --     _ =
     --         Debug.log "configs" (Debug.toString config)
