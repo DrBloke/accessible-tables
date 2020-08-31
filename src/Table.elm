@@ -3,12 +3,12 @@ module Table exposing
     , Headings(..)
     , TableError(..)
     , errorToString
+    , generate
     , hideColumnHeadings
     , hideRowHeadings
-    , render
     , setColumnHeadings
     , setRowHeadings
-    , simpleTable
+    , view
     )
 
 import Html exposing (..)
@@ -49,11 +49,10 @@ type ColumnHeadingGroup msg
     = ColumnHeadingGroup (ColumnHeading msg) (List (ColumnHeading msg))
 
 
-type ColumnHeading msg
-    = ColumnHeading
-        { label : Html msg
-        , attributes : List (Html.Attribute msg)
-        }
+type alias ColumnHeading msg =
+    { label : Html msg
+    , attributes : List (Html.Attribute msg)
+    }
 
 
 type RowHeadings msg
@@ -69,11 +68,10 @@ type RowHeadingGroup msg
     = RowHeadingGroup (RowHeading msg) (List (RowHeading msg))
 
 
-type RowHeading msg
-    = RowHeading
-        { label : Html msg
-        , attributes : List (Html.Attribute msg)
-        }
+type alias RowHeading msg =
+    { label : Html msg
+    , attributes : List (Html.Attribute msg)
+    }
 
 
 type Cell msg
@@ -89,11 +87,11 @@ type Headings
 
 
 type ComplexHeading
-    = H String (List String)
+    = HeadingAndSubHeadings String (List String)
 
 
-simpleTable : List (List String) -> Result TableError (TableConfiguration msg)
-simpleTable data =
+generate : List (List String) -> Result TableError (TableConfiguration msg)
+generate data =
     -- do a check that all rows have equal number of cells
     case allRowsEqualLength data of
         Ok noOfCols ->
@@ -105,11 +103,9 @@ simpleTable data =
                                 |> List.map
                                     (\colNo ->
                                         ColumnHeadingSingle
-                                            (ColumnHeading
-                                                { label = text <| "Column " ++ String.fromInt colNo
-                                                , attributes = []
-                                                }
-                                            )
+                                            { label = text <| "Column " ++ String.fromInt colNo
+                                            , attributes = []
+                                            }
                                     )
                             )
                     , columnHeadingsShown = True
@@ -118,7 +114,7 @@ simpleTable data =
                             (List.range 1 (List.length data)
                                 |> List.map
                                     (\rowNo ->
-                                        RowHeadingSingle (RowHeading { label = text <| "Row " ++ String.fromInt rowNo, attributes = [] })
+                                        RowHeadingSingle { label = text <| "Row " ++ String.fromInt rowNo, attributes = [] }
                                     )
                             )
                     , rowHeadingsShown = True
@@ -179,11 +175,9 @@ setColumnHeadings headings_ resultConfig =
                                         (List.map
                                             (\label ->
                                                 ColumnHeadingSingle
-                                                    (ColumnHeading
-                                                        { label = Html.text label
-                                                        , attributes = []
-                                                        }
-                                                    )
+                                                    { label = Html.text label
+                                                    , attributes = []
+                                                    }
                                             )
                                             headings
                                         )
@@ -208,19 +202,16 @@ setColumnHeadings headings_ resultConfig =
                                 | columnHeadings =
                                     ColumnHeadingsComplex
                                         (List.map
-                                            (\(H mainHeading subHeadings) ->
+                                            (\(HeadingAndSubHeadings mainHeading subHeadings) ->
                                                 ColumnHeadingGroup
-                                                    (ColumnHeading
-                                                        { label = Html.text mainHeading
-                                                        , attributes = []
-                                                        }
-                                                    )
+                                                    { label = Html.text mainHeading
+                                                    , attributes = []
+                                                    }
                                                     (List.map
                                                         (\subHeading ->
-                                                            ColumnHeading
-                                                                { label = Html.text subHeading
-                                                                , attributes = []
-                                                                }
+                                                            { label = Html.text subHeading
+                                                            , attributes = []
+                                                            }
                                                         )
                                                         subHeadings
                                                     )
@@ -246,10 +237,10 @@ noOfComplexHeadings complexHeadings =
         addHeaders : ComplexHeading -> Int -> Int
         addHeaders header acc =
             case header of
-                H _ [] ->
+                HeadingAndSubHeadings _ [] ->
                     acc + 1
 
-                H _ subHeadings ->
+                HeadingAndSubHeadings _ subHeadings ->
                     acc + List.length subHeadings
     in
     List.foldl addHeaders 0 complexHeadings
@@ -270,11 +261,9 @@ setRowHeadings headings_ resultConfig =
                                         (List.map
                                             (\label ->
                                                 RowHeadingSingle
-                                                    (RowHeading
-                                                        { label = Html.text label
-                                                        , attributes = []
-                                                        }
-                                                    )
+                                                    { label = Html.text label
+                                                    , attributes = []
+                                                    }
                                             )
                                             headings
                                         )
@@ -298,19 +287,16 @@ setRowHeadings headings_ resultConfig =
                                 | rowHeadings =
                                     RowHeadingsComplex
                                         (List.map
-                                            (\(H mainHeading subHeadings) ->
+                                            (\(HeadingAndSubHeadings mainHeading subHeadings) ->
                                                 RowHeadingGroup
-                                                    (RowHeading
-                                                        { label = Html.text mainHeading
-                                                        , attributes = []
-                                                        }
-                                                    )
+                                                    { label = Html.text mainHeading
+                                                    , attributes = []
+                                                    }
                                                     (List.map
                                                         (\subHeading ->
-                                                            RowHeading
-                                                                { label = Html.text subHeading
-                                                                , attributes = []
-                                                                }
+                                                            { label = Html.text subHeading
+                                                            , attributes = []
+                                                            }
                                                         )
                                                         subHeadings
                                                     )
@@ -353,12 +339,8 @@ errorToString error =
             "The number of row headings does not match the number of rows of data. "
 
 
-render : Result TableError (TableConfiguration msg) -> Result TableError (Html msg)
-render config =
-    -- let
-    --     _ =
-    --         Debug.log "configs" (Debug.toString config)
-    -- in
+view : Result TableError (TableConfiguration msg) -> Result TableError (Html msg)
+view config =
     case config of
         Ok (TableConfiguration tableConfig) ->
             let
@@ -380,7 +362,7 @@ render config =
                                 [ tr [ hidden (not tableConfig.columnHeadingsShown) ]
                                     (spacer
                                         ++ List.map
-                                            (\(ColumnHeadingSingle (ColumnHeading colInfo)) ->
+                                            (\(ColumnHeadingSingle colInfo) ->
                                                 th [ scope "col" ] [ colInfo.label ]
                                             )
                                             cols
@@ -411,7 +393,7 @@ render config =
                                     in
                                     colSpacer
                                         ++ List.map
-                                            (\(ColumnHeadingGroup (ColumnHeading colInfo) subHeads) ->
+                                            (\(ColumnHeadingGroup colInfo subHeads) ->
                                                 colgroup_ (List.length subHeads)
                                             )
                                             complexHeadings
@@ -434,7 +416,7 @@ render config =
                                                 [ scope "colgroup", colspan n ]
                                     in
                                     List.map
-                                        (\(ColumnHeadingGroup (ColumnHeading colInfo) subHeads) ->
+                                        (\(ColumnHeadingGroup colInfo subHeads) ->
                                             th (cols (List.length subHeads)) [ colInfo.label ]
                                         )
                                         complexHeadings
@@ -442,9 +424,9 @@ render config =
                                 subHeadings : List (Html msg)
                                 subHeadings =
                                     List.map
-                                        (\(ColumnHeadingGroup (ColumnHeading _) subHeads) ->
+                                        (\(ColumnHeadingGroup _ subHeads) ->
                                             List.map
-                                                (\(ColumnHeading colInfo) ->
+                                                (\colInfo ->
                                                     th [ scope "col" ] [ colInfo.label ]
                                                 )
                                                 subHeads
@@ -472,7 +454,7 @@ render config =
                                     [ tbody []
                                         (List.zip tableConfig.cells rowHeadings
                                             |> List.map
-                                                (\( rowDataInfo, RowHeadingSingle (RowHeading rowHeadingInfo) ) ->
+                                                (\( rowDataInfo, RowHeadingSingle rowHeadingInfo ) ->
                                                     tr [] ([ th ([ scope "row", hidden (not tableConfig.rowHeadingsShown) ] ++ rowHeadingInfo.attributes) [ rowHeadingInfo.label ] ] ++ List.map (\(Cell cell) -> td cell.attributes [ cell.value ]) rowDataInfo)
                                                 )
                                         )
@@ -495,3 +477,80 @@ render config =
 
         Err error ->
             Err error
+
+
+renderComplexRows : Bool -> List (RowHeadingGroup msg) -> List (List (Cell msg)) -> List (Html msg)
+renderComplexRows rowHeadingsShown rowHeadings cells =
+    getComplexRows rowHeadings cells []
+        |> List.map
+            (\row ->
+                case row of
+                    RowGroupNoSubHeadings rowHeading cellsOfRow ->
+                        tr []
+                            (th ([ scope "row", hidden (not rowHeadingsShown) ] ++ rowHeading.attributes) [ rowHeading.label ]
+                                :: List.map (\(Cell cell) -> td cell.attributes [ cell.value ]) cellsOfRow
+                            )
+
+                    RowGroupFirst rowHeading span rowSubHeading cellsOfRow ->
+                        tr []
+                            ([ th ([ scope "rowgroup", rowspan span, hidden (not rowHeadingsShown) ] ++ rowHeading.attributes) [ rowHeading.label ]
+                             , th ([ scope "row", hidden (not rowHeadingsShown) ] ++ rowSubHeading.attributes) [ rowSubHeading.label ]
+                             ]
+                                ++ List.map (\(Cell cell) -> td cell.attributes [ cell.value ]) cellsOfRow
+                            )
+
+                    RowGroupOther rowSubHeading cellsOfRow ->
+                        tr []
+                            (th ([ scope "row", hidden (not rowHeadingsShown) ] ++ rowSubHeading.attributes) [ rowSubHeading.label ]
+                                :: List.map (\(Cell cell) -> td cell.attributes [ cell.value ]) cellsOfRow
+                            )
+            )
+
+
+type
+    RowGroup msg
+    -- RowGroupFirst rowHeading, rowSpan (number of rows in group), rowSubHeading, dataCells
+    = RowGroupFirst (RowHeading msg) Int (RowHeading msg) (List (Cell msg))
+    | RowGroupOther (RowHeading msg) (List (Cell msg))
+    | RowGroupNoSubHeadings (RowHeading msg) (List (Cell msg))
+
+
+getComplexRows : List (RowHeadingGroup msg) -> List (List (Cell msg)) -> List (RowGroup msg) -> List (RowGroup msg)
+getComplexRows headings cells accRows =
+    case headings of
+        [] ->
+            List.reverse accRows
+
+        (RowHeadingGroup rowHeading rowSubHeadings) :: headingGroupTail ->
+            case rowSubHeadings of
+                [] ->
+                    let
+                        ( cellsHead, cellsTail ) =
+                            List.splitAt 1 cells
+                    in
+                    getComplexRows headingGroupTail cellsTail (RowGroupNoSubHeadings rowHeading (List.concat cellsHead) :: accRows)
+
+                subHeadingHead :: subHeadingTail ->
+                    let
+                        ( cellsOfGroup, cellsNotOfGroup ) =
+                            List.splitAt (List.length rowSubHeadings) cells
+
+                        ( cellsOfGroupHead, cellsOfGroupTail ) =
+                            List.splitAt 1 cellsOfGroup
+
+                        rowGroups =
+                            RowGroupFirst rowHeading (List.length rowSubHeadings) subHeadingHead (List.concat cellsOfGroupHead)
+                                :: (List.zip subHeadingTail cellsOfGroupTail
+                                        |> List.map
+                                            (\( subHeadingThisRow, cellsThisRow ) ->
+                                                RowGroupOther subHeadingThisRow cellsThisRow
+                                            )
+                                   )
+                    in
+                    getComplexRows headingGroupTail cellsNotOfGroup (rowGroups ++ accRows)
+
+
+
+-- RowHeadingGroup ({label = "heading", attributes = []}) []
+-- RowHeadingGroup ({label = "heading", attributes = []}) [{label = "subHeading1", attributes = []}]
+-- RowHeadingGroup ({label = "heading", attributes = []}) [{label = "subHeading1", attributes = []}, {label = "subHeading2", attributes = []}]

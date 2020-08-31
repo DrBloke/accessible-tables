@@ -1,4 +1,4 @@
-module AccessibleTables exposing (..)
+module ComplexTable exposing (..)
 
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
@@ -17,18 +17,18 @@ suite =
                     \_ ->
                         let
                             generatedTable =
-                                simpleTable
+                                generate
                                     [ [ "50,000", "30,000", "100,000", "80,000" ]
                                     , [ "10,000", "5,000", "12,000", "9,000" ]
                                     ]
                                     |> setColumnHeadings
                                         (ComplexHeadings
-                                            [ H "Mars" [ "Produced", "Sold" ]
-                                            , H "Venus" [ "Produced", "Sold" ]
+                                            [ HeadingAndSubHeadings "Mars" [ "Produced", "Sold" ]
+                                            , HeadingAndSubHeadings "Venus" [ "Produced", "Sold" ]
                                             ]
                                         )
                                     |> setRowHeadings (Headings [ "Teddy Bears", "Board Games" ])
-                                    |> render
+                                    |> view
                                     |> Result.withDefault (text "failed to generate")
 
                             w3example =
