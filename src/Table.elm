@@ -352,11 +352,20 @@ view config =
                         ColumnHeadingsSimple cols ->
                             let
                                 spacer =
-                                    if tableConfig.rowHeadingsShown then
-                                        [ td [] [] ]
+                                    case tableConfig.rowHeadings of
+                                        RowHeadingsSimple _ ->
+                                            if tableConfig.rowHeadingsShown then
+                                                [ td [] [] ]
 
-                                    else
-                                        []
+                                            else
+                                                []
+
+                                        RowHeadingsComplex _ ->
+                                            if tableConfig.rowHeadingsShown then
+                                                [ td [ colspan 2 ] [] ]
+
+                                            else
+                                                []
                             in
                             [ thead []
                                 [ tr [ hidden (not tableConfig.columnHeadingsShown) ]
@@ -399,11 +408,20 @@ view config =
                                             complexHeadings
 
                                 spacer =
-                                    if tableConfig.rowHeadingsShown then
-                                        [ td [ rowspan 2 ] [] ]
+                                    case tableConfig.rowHeadings of
+                                        RowHeadingsSimple _ ->
+                                            if tableConfig.rowHeadingsShown then
+                                                [ td [ rowspan 2 ] [] ]
 
-                                    else
-                                        []
+                                            else
+                                                []
+
+                                        RowHeadingsComplex _ ->
+                                            if tableConfig.rowHeadingsShown then
+                                                [ td [ colspan 2, rowspan 2 ] [] ]
+
+                                            else
+                                                []
 
                                 mainHeadings : List (Html msg)
                                 mainHeadings =
@@ -460,8 +478,8 @@ view config =
                                         )
                                     ]
 
-                                RowHeadingsComplex _ ->
-                                    [ tbody [] [ tr [] [ td [] [ text "not implemented" ] ] ] ]
+                                RowHeadingsComplex rowHeadings ->
+                                    [ tbody [] (renderComplexRows tableConfig.rowHeadingsShown rowHeadings tableConfig.cells) ]
             in
             case body of
                 [] ->
@@ -487,7 +505,7 @@ renderComplexRows rowHeadingsShown rowHeadings cells =
                 case row of
                     RowGroupNoSubHeadings rowHeading cellsOfRow ->
                         tr []
-                            (th ([ scope "row", hidden (not rowHeadingsShown) ] ++ rowHeading.attributes) [ rowHeading.label ]
+                            (th ([ scope "row", hidden (not rowHeadingsShown), colspan 2 ] ++ rowHeading.attributes) [ rowHeading.label ]
                                 :: List.map (\(Cell cell) -> td cell.attributes [ cell.value ]) cellsOfRow
                             )
 
@@ -519,7 +537,7 @@ getComplexRows : List (RowHeadingGroup msg) -> List (List (Cell msg)) -> List (R
 getComplexRows headings cells accRows =
     case headings of
         [] ->
-            List.reverse accRows
+            accRows
 
         (RowHeadingGroup rowHeading rowSubHeadings) :: headingGroupTail ->
             case rowSubHeadings of
@@ -547,7 +565,7 @@ getComplexRows headings cells accRows =
                                             )
                                    )
                     in
-                    getComplexRows headingGroupTail cellsNotOfGroup (rowGroups ++ accRows)
+                    getComplexRows headingGroupTail cellsNotOfGroup (accRows ++ rowGroups)
 
 
 

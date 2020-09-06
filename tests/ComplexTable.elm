@@ -98,4 +98,10 @@ suite =
                     in
                     Expect.equal generatedTable w3example
             ]
+        , describe "getComplexRows function"
+            [ only <|
+                test "no subheadings" <|
+                    \_ ->
+                        Expect.true "space for new test" True
+            ]
         ]
